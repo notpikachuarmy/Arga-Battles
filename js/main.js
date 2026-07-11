@@ -43,6 +43,15 @@ function calculateStats(type, level){
   };
 }
 
+// Curva de introducción: antes de que la plantilla empiece a desbloquear habilidades,
+// los enemigos tienen estadísticas reducidas. Desde la ronda 4 combaten al 100%.
+function earlyEnemyScaling(round){
+  if(round <= 1) return { hp: 0.65, combat: 0.70, label: 'Muy debilitado' };
+  if(round === 2) return { hp: 0.78, combat: 0.80, label: 'Debilitado' };
+  if(round === 3) return { hp: 0.90, combat: 0.90, label: 'Ligeramente debilitado' };
+  return { hp: 1, combat: 1, label: null };
+}
+
 function awardGlobalXp(amount){
   const levelUps=[];
   SAVE.playerRoster.forEach(recruit=>{
@@ -200,17 +209,31 @@ class BattleScene extends Phaser.Scene {
     this.units=[]; this.nextId=1;
     this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId));
     const difficulty=Math.min(5,Math.floor((SAVE.round-1)/2));
+    const enemyIntroScale=earlyEnemyScaling(SAVE.round);
     const enemies=this.enemyPositions.length?this.enemyPositions:randomTeam().map((recruit,i)=>({type:recruit.type,level:1,col:4,row:i}));
-    enemies.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,(p.level||1)+difficulty)));
+    enemies.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,(p.level||1)+difficulty),null,enemyIntroScale));
+    if(enemyIntroScale.label){
+      this.add.text(W-24,92,`ENEMIGOS: ${enemyIntroScale.label.toUpperCase()}`,{
+        fontSize:'13px',fontStyle:'bold',color:'#ffd8a8',backgroundColor:'#211423',padding:{x:9,y:5}
+      }).setOrigin(1,0).setAlpha(.9);
+    }
     this.units.forEach(u=>this.drawUnit(u));
 
     this.action='none'; this.active=null; this.turnQueue=[]; this.queueIndex=0; this.battleOver=false;
     this.autoBattle=false;
     this.createHud(); this.buildTurnQueue(); this.beginTurn();
   }
-  spawnUnit(type,team,col,row,level=1,recruitId=null){
+  spawnUnit(type,team,col,row,level=1,recruitId=null,statScale=null){
     const b=CLASSES[type];
     const stats=calculateStats(type,level);
+    if(team==='enemy' && statScale){
+      stats.maxHp=Math.max(5,Math.round(stats.maxHp*statScale.hp));
+      stats.maxMp=Math.max(5,Math.round(stats.maxMp*statScale.combat));
+      for(const key of ['df','str','int','agi','charisma','will','perception']){
+        stats[key]=Math.max(1,Math.round(stats[key]*statScale.combat));
+      }
+      stats.stealth=Math.max(0,Math.round(stats.stealth*statScale.combat));
+    }
     const unit={id:this.nextId++,recruitId,type,team,col,row,level,name:b.name,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:3,maxAp:3,alive:true,sprite:null,hpBar:null,status:[],acted:false};
     this.units.push(unit); return unit;
   }
