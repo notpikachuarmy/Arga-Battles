@@ -103,17 +103,17 @@ export class EncyclopediaScene extends Phaser.Scene {
     const blessingText=this.add.text(315,94,`Bendición predominante: ${blessing.name}\n${blessing.description}`,{fontSize:'14px',color:'#e7ddec',lineSpacing:4});
     const one=this.add.text(245,165,this.formatStats('NIVEL 1',lvl1),{fontSize:'15px',color:'#e9e1ee',lineSpacing:5});
     const ten=this.add.text(500,165,this.formatStats('NIVEL 10',lvl10),{fontSize:'15px',color:'#e9e1ee',lineSpacing:5});
-    const abilitiesTitle=this.add.text(30,385,'HABILIDADES DE CLASE',{fontSize:'21px',fontStyle:'bold',color:'#ffe69a'});
-    this.content.add([panel,portrait,title,identity,blessingIcon,blessingText,one,ten,abilitiesTitle]);
+    const abilitiesTitle=this.add.text(30,350,'POOL DE HABILIDADES · NIVEL 1, 5 Y 10',{fontSize:'19px',fontStyle:'bold',color:'#ffe69a'});
+    const note=this.add.text(30,378,'La habilidad inicial procede de la pool inicial. En niveles 5 y 10 aprende una habilidad aleatoria que todavía no conozca.',{fontSize:'12px',color:'#cfc3d8',wordWrap:{width:900}});
+    this.content.add([panel,portrait,title,identity,blessingIcon,blessingText,one,ten,abilitiesTitle,note]);
 
     const pool=cls.abilityPool??[];
     pool.forEach((id,i)=>{
-      const a=ABILITIES[id],y=425+i*145;
-      const icon=this.add.image(80,y+50,a.icon).setDisplaySize(88,88);
-      const name=this.add.text(145,y,`${a.name} · ${a.rarity}`,{fontSize:'18px',fontStyle:'bold',color:'#fff'});
-      const costs=this.add.text(145,y+29,`${a.apCost} AP · ${a.mpCost} MP`,{fontSize:'14px',color:'#91c8ff'});
-      const desc=this.add.text(145,y+54,a.description,{fontSize:'14px',color:'#ddd3e4',wordWrap:{width:750},lineSpacing:4});
-      this.content.add([icon,name,costs,desc]);
+      const a=ABILITIES[id],col=i%2,row=Math.floor(i/2),x=30+col*465,y=416+row*42;
+      const icon=this.add.image(x+20,y+18,a.icon).setDisplaySize(36,36);
+      const name=this.add.text(x+45,y,`${a.rarity} · ${a.name}`,{fontSize:'13px',fontStyle:'bold',color:'#fff',wordWrap:{width:380}});
+      const costs=this.add.text(x+45,y+21,`${a.apCost} AP · ${a.mpCost} MP`,{fontSize:'11px',color:'#91c8ff'});
+      this.content.add([icon,name,costs]);
     });
   }
 

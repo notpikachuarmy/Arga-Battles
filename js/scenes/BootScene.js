@@ -4,13 +4,16 @@ export class BootScene extends Phaser.Scene {
     const A='assets/';
     const images={
       menuBg:'backgrounds/main_menu_background.png',battleBg:'backgrounds/battle_background.png',logo:'ui/logo.png',
-      rune:'units/rune_tracer/rune_tracer_idle.png',formless:'units/formless/formless_idle.png',demon:'units/demon_blood/demon_blood_idle.png',
-      runePortrait:'units/rune_tracer/rune_tracer_portrait.png',formlessPortrait:'units/formless/formless_portrait.png',demonPortrait:'units/demon_blood/demon_blood_portrait.png',
+      rune:'units/rune_tracer/rune_tracer_idle.png',formless:'units/formless/formless_idle.png',demon:'units/demon_blood/demon_blood_idle.png',zombie:'units/zombie/zombie_idle.png',
+      runePortrait:'units/rune_tracer/rune_tracer_portrait.png',formlessPortrait:'units/formless/formless_portrait.png',demonPortrait:'units/demon_blood/demon_blood_portrait.png',zombiePortrait:'units/zombie/zombie_portrait.png',
       move:'abilities/basic/move.png',attack:'abilities/basic/basic_attack.png',end:'abilities/basic/end_turn.png',skill:'abilities/basic/skill_placeholder.png',
-      runeLightning:'abilities/rune_tracer/rune_spear_lightning.png',liquidArm:'abilities/formless/liquid_arm.png',bloodThorns:'abilities/demon_blood/devil_blood_thorns.png',
+      runeLightning:'abilities/rune_tracer/rune_spear_lightning.png',runeFadingFire:'abilities/rune_tracer/rune_fading_fire.png',runeEarthWall:'abilities/rune_tracer/rune_earth_wall.png',runeLightBlessing:'abilities/rune_tracer/rune_light_blessing.png',runeResurrection:'abilities/rune_tracer/rune_resurrection.png',runeStarRain:'abilities/rune_tracer/rune_star_rain.png',runeRaiseDead:'abilities/rune_tracer/rune_raise_dead.png',
+      liquidArm:'abilities/formless/liquid_arm.png',miniaturize:'abilities/formless/miniaturize.png',adaptiveResistance:'abilities/formless/adaptive_resistance.png',wateryDodge:'abilities/formless/watery_dodge.png',maximize:'abilities/formless/maximize.png',perfectTransformation:'abilities/formless/perfect_transformation.png',imperfectTransformation:'abilities/formless/imperfect_transformation.png',
+      bloodThorns:'abilities/demon_blood/devil_blood_thorns.png',jetBlackRipperBlood:'abilities/demon_blood/jet_black_ripper_blood.png',spitterSpawnBlood:'abilities/demon_blood/spitter_spawn_blood.png',bloodThirst:'abilities/demon_blood/blood_thirst.png',crimsonPact:'abilities/demon_blood/crimson_pact.png',demonicHeart:'abilities/demon_blood/demonic_heart.png',finalOffering:'abilities/demon_blood/final_offering.png',
+      earthWall:'summons/earth_wall.png',
       hit:'effects/hit_physical.png',magic:'effects/hit_magic.png',heal:'effects/healing.png',lightningFx:'effects/lightning_spear.png',liquidFx:'effects/liquid_sweep.png',bloodFx:'effects/blood_thorns_buff.png',
-      notpika:'blessings/blessing_notpikachu.png',hojafail:'blessings/blessing_hojafail.png',fotopie:'blessings/blessing_fotopie.png',chimecho:'blessings/blessing_chimecho.png',
-      arrow:'ui/orientation_arrow.png',paralyzed:'status/paralyzed.png',strengthUp:'status/strength_up.png',defenseUp:'status/defense_up.png'
+      notpika:'blessings/blessing_notpikachu.png',hojafail:'blessings/blessing_hojafail.png',fotopie:'blessings/blessing_fotopie.png',chimecho:'blessings/blessing_chimecho.png',arrow:'ui/orientation_arrow.png',
+      paralyzed:'status/paralyzed.png',strengthUp:'status/strength_up.png',defenseUp:'status/defense_up.png',agilityUp:'status/agility_up.png',poisoned:'status/poisoned.png',stealth:'status/stealth.png',fireDamageUp:'status/fire_damage_up.png',adaptiveResistanceStatus:'status/adaptive_resistance.png',wateryDodgeStatus:'status/watery_dodge.png',miniaturized:'status/miniaturized.png',maximized:'status/maximized.png',transformed:'status/transformed.png',bloodThirstStatus:'status/blood_thirst.png',crimsonPactStatus:'status/crimson_pact.png',lifesteal:'status/lifesteal.png',regeneration:'status/regeneration.png'
     };
     Object.entries(images).forEach(([key,path])=>this.load.image(key,A+path));
     this.load.on('complete',()=>document.getElementById('loading-message')?.remove());

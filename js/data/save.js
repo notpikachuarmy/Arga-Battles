@@ -13,7 +13,7 @@ export const SAVE = {
 export function randomClass(){ return Phaser.Utils.Array.GetRandom(CLASS_KEYS); }
 
 export function createRecruit(type = randomClass()){
-  const pool = CLASSES[type]?.abilityPool ?? [];
+  const pool = CLASSES[type]?.startingAbilityPool ?? CLASSES[type]?.abilityPool ?? [];
   const initial = pool.length ? [Phaser.Utils.Array.GetRandom(pool)] : [];
   return {
     id: SAVE.nextRecruitId++,
