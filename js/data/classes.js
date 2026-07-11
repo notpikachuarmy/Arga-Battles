@@ -1,7 +1,7 @@
 export const CLASSES = {
   rune: {
     name:'Trazador de Runas',rarity:'N',texture:'rune',portrait:'runePortrait',defaultBlessing:'Hojafail',
-    startingAbilityPool:['runeLightningSpear'],
+    startingAbilityPool:['runeLightningSpear','runeFadingFire','runeEarthWall','runeLightBlessing','runeResurrection','runeStarRain','runeRaiseDead'],
     abilityPool:['runeLightningSpear','runeFadingFire','runeEarthWall','runeLightBlessing','runeResurrection','runeStarRain','runeRaiseDead'],
     constitution:1,energy:3,df:1,str:1,int:3,agi:2,charisma:2,will:2,stealth:1,perception:2,
     growth:{constitution:3,energy:7,df:2,str:2,int:8,agi:5,charisma:6,will:4,stealth:3,perception:6},
@@ -9,7 +9,7 @@ export const CLASSES = {
   },
   formless: {
     name:'Sin Forma',rarity:'N',texture:'formless',portrait:'formlessPortrait',defaultBlessing:'Fotopie',
-    startingAbilityPool:['liquidArm'],
+    startingAbilityPool:['liquidArm','miniaturize','adaptiveResistance','wateryDodge','maximize','perfectTransformation','imperfectTransformation'],
     abilityPool:['liquidArm','miniaturize','adaptiveResistance','wateryDodge','maximize','perfectTransformation','imperfectTransformation'],
     constitution:2,energy:2,df:3,str:2,int:1,agi:3,charisma:2,will:2,stealth:3,perception:2,
     growth:{constitution:6,energy:4,df:7,str:5,int:2,agi:8,charisma:4,will:5,stealth:12,perception:5},
@@ -17,7 +17,7 @@ export const CLASSES = {
   },
   demon: {
     name:'Sangre Demoníaca',rarity:'N',texture:'demon',portrait:'demonPortrait',defaultBlessing:'Chimech-o',
-    startingAbilityPool:['devilBloodThorns'],
+    startingAbilityPool:['devilBloodThorns','jetBlackRipperBlood','spitterSpawnBlood','bloodThirst','crimsonPact','demonicHeart','finalOffering'],
     abilityPool:['devilBloodThorns','jetBlackRipperBlood','spitterSpawnBlood','bloodThirst','crimsonPact','demonicHeart','finalOffering'],
     constitution:3,energy:2,df:2,str:3,int:2,agi:1,charisma:1,will:3,stealth:1,perception:1,
     growth:{constitution:8,energy:3,df:5,str:8,int:4,agi:2,charisma:2,will:8,stealth:2,perception:3},

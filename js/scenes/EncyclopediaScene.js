@@ -95,28 +95,49 @@ export class EncyclopediaScene extends Phaser.Scene {
     this.clearContent();
     const cls=CLASSES[type],lvl1=calculateStats(type,1),lvl10=calculateStats(type,10);
     const panel=this.add.rectangle(0,0,970,590,0x120c1b,.97).setOrigin(0).setStrokeStyle(3,0x806996);
-    const portrait=this.add.image(125,145,cls.portrait).setDisplaySize(190,190);
-    const title=this.add.text(245,22,`${cls.name} · ${cls.rarity}`,{fontSize:'30px',fontStyle:'bold',color:'#fff'});
-    const identity=this.add.text(245,57,cls.identity,{fontSize:'14px',color:'#ffe69a',wordWrap:{width:680}});
+    const portrait=this.add.image(120,135,cls.portrait).setDisplaySize(180,180);
+    const title=this.add.text(230,20,`${cls.name} · Rareza ${cls.rarity}`,{fontSize:'28px',fontStyle:'bold',color:'#fff'});
+    const identity=this.add.text(230,55,cls.identity,{fontSize:'13px',color:'#ffe69a',wordWrap:{width:700}});
     const blessing=BLESSINGS[cls.defaultBlessing];
-    const blessingIcon=this.add.image(275,112,blessing.texture).setDisplaySize(54,54);
-    const blessingText=this.add.text(315,94,`Bendición predominante: ${blessing.name}\n${blessing.description}`,{fontSize:'14px',color:'#e7ddec',lineSpacing:4});
-    const one=this.add.text(245,165,this.formatStats('NIVEL 1',lvl1),{fontSize:'15px',color:'#e9e1ee',lineSpacing:5});
-    const ten=this.add.text(500,165,this.formatStats('NIVEL 10',lvl10),{fontSize:'15px',color:'#e9e1ee',lineSpacing:5});
-    const abilitiesTitle=this.add.text(30,350,'POOL DE HABILIDADES · NIVEL 1, 5 Y 10',{fontSize:'19px',fontStyle:'bold',color:'#ffe69a'});
-    const note=this.add.text(30,378,'La habilidad inicial procede de la pool inicial. En niveles 5 y 10 aprende una habilidad aleatoria que todavía no conozca.',{fontSize:'12px',color:'#cfc3d8',wordWrap:{width:900}});
+    const blessingIcon=this.add.image(260,110,blessing.texture).setDisplaySize(48,48);
+    const blessingText=this.add.text(295,91,`Bendición predominante: ${blessing.name}\n${blessing.description}`,{fontSize:'13px',color:'#e7ddec',lineSpacing:3,wordWrap:{width:620}});
+    const one=this.add.text(230,155,this.formatStats('NIVEL 1',lvl1),{fontSize:'14px',color:'#e9e1ee',lineSpacing:4});
+    const ten=this.add.text(490,155,this.formatStats('NIVEL 10',lvl10),{fontSize:'14px',color:'#e9e1ee',lineSpacing:4});
+    const abilitiesTitle=this.add.text(25,325,'HABILIDADES POSIBLES',{fontSize:'18px',fontStyle:'bold',color:'#ffe69a'});
+    const note=this.add.text(25,351,'En nivel 1 recibe una habilidad aleatoria de esta lista. En niveles 5 y 10 aprende otra que todavía no conozca.',{fontSize:'12px',color:'#cfc3d8',wordWrap:{width:910}});
     this.content.add([panel,portrait,title,identity,blessingIcon,blessingText,one,ten,abilitiesTitle,note]);
 
     const pool=cls.abilityPool??[];
-    pool.forEach((id,i)=>{
-      const a=ABILITIES[id],col=i%2,row=Math.floor(i/2),x=30+col*465,y=416+row*42;
-      const icon=this.add.image(x+20,y+18,a.icon).setDisplaySize(36,36);
-      const name=this.add.text(x+45,y,`${a.rarity} · ${a.name}`,{fontSize:'13px',fontStyle:'bold',color:'#fff',wordWrap:{width:380}});
-      const costs=this.add.text(x+45,y+21,`${a.apCost} AP · ${a.mpCost} MP`,{fontSize:'11px',color:'#91c8ff'});
-      this.content.add([icon,name,costs]);
-    });
-  }
+    const listBg=this.add.rectangle(25,385,360,180,0x1c1427,.96).setOrigin(0).setStrokeStyle(2,0x6d5982);
+    const detailBg=this.add.rectangle(400,385,545,180,0x1c1427,.96).setOrigin(0).setStrokeStyle(2,0x6d5982);
+    this.content.add([listBg,detailBg]);
 
+    const detailIcon=this.add.image(445,435,'skillPlaceholder').setDisplaySize(72,72);
+    const detailName=this.add.text(495,397,'Selecciona una habilidad',{fontSize:'18px',fontStyle:'bold',color:'#fff',wordWrap:{width:420}});
+    const detailMeta=this.add.text(495,430,'',{fontSize:'13px',color:'#91c8ff'});
+    const detailDesc=this.add.text(495,458,'Pulsa una habilidad de la lista para ver su explicación completa.',{fontSize:'13px',color:'#e5ddea',wordWrap:{width:420},lineSpacing:4});
+    this.content.add([detailIcon,detailName,detailMeta,detailDesc]);
+
+    const showAbility=(a)=>{
+      detailIcon.setTexture(a.icon);
+      detailName.setText(a.name);
+      detailMeta.setText(`Rareza ${a.rarity} · ${a.apCost} AP · ${a.mpCost} MP`);
+      detailDesc.setText(a.description);
+    };
+
+    pool.forEach((id,i)=>{
+      const a=ABILITIES[id];
+      const y=394+i*24;
+      const hit=this.add.rectangle(35,y,340,22,0x2a1e38,.9).setOrigin(0).setStrokeStyle(1,0x5e4b70).setInteractive({useHandCursor:true});
+      const icon=this.add.image(48,y+11,a.icon).setDisplaySize(18,18);
+      const name=this.add.text(64,y+3,`${a.rarity} · ${a.name}`,{fontSize:'11px',fontStyle:'bold',color:'#fff',wordWrap:{width:300}});
+      hit.on('pointerdown',()=>showAbility(a));
+      hit.on('pointerover',()=>hit.setFillStyle(0x473158,.96));
+      hit.on('pointerout',()=>hit.setFillStyle(0x2a1e38,.9));
+      this.content.add([hit,icon,name]);
+    });
+    if(pool.length)showAbility(ABILITIES[pool[0]]);
+  }
   formatStats(label,s){
     return [label,`HP: ${s.maxHp}   MP: ${s.maxMp}`,`DF: ${s.df}   FUE: ${s.str}   INT: ${s.int}`,`AGI: ${s.agi}   CON: ${s.constitution}   ENE: ${s.energy}`,`CAR: ${s.charisma}   VOL: ${s.will}`,`SIG: ${s.stealth}%   PER: ${s.perception}`].join('\n');
   }
