@@ -7,9 +7,11 @@ const GRID_X = 352;
 const GRID_Y = 194;
 
 const CLASSES = {
-  rune: { name: 'Trazador de Runas', texture: 'rune', portrait: 'runePortrait', blessing: 'Hojafail', constitution: 6, energy: 6, mpBonus: 5, df: 2, str: 4, int: 7, agi: 6, charisma: 6, will: 6, stealth: 5, perception: 6 },
-  formless: { name: 'Sin Forma', texture: 'formless', portrait: 'formlessPortrait', blessing: 'Fotopie', constitution: 8, energy: 4, mpBonus: 5, df: 4, str: 5, int: 4, agi: 8, charisma: 5, will: 6, stealth: 12, perception: 7 },
-  demon: { name: 'Sangre Demoníaca', texture: 'demon', portrait: 'demonPortrait', blessing: 'Chimech-o', constitution: 9, energy: 5, mpBonus: 5, df: 3, str: 7, int: 5, agi: 5, charisma: 4, will: 7, stealth: 4, perception: 5 }
+  // En nivel 1 todas las estadísticas base están entre 1 y 3.
+  // La identidad de clase viene de cómo se reparten esos pocos puntos.
+  rune: { name: 'Trazador de Runas', texture: 'rune', portrait: 'runePortrait', blessing: 'Hojafail', constitution: 1, energy: 3, df: 1, str: 1, int: 3, agi: 2, charisma: 2, will: 2, stealth: 1, perception: 2 },
+  formless: { name: 'Sin Forma', texture: 'formless', portrait: 'formlessPortrait', blessing: 'Fotopie', constitution: 2, energy: 2, df: 3, str: 2, int: 1, agi: 3, charisma: 2, will: 2, stealth: 3, perception: 2 },
+  demon: { name: 'Sangre Demoníaca', texture: 'demon', portrait: 'demonPortrait', blessing: 'Chimech-o', constitution: 3, energy: 2, df: 2, str: 3, int: 2, agi: 1, charisma: 1, will: 3, stealth: 1, perception: 1 }
 };
 
 const SAVE = { round: 1, soldierPoints: 6, playerRoster: [], nextRecruitId: 1 };
@@ -21,19 +23,23 @@ const xpNeeded = level => 50 + (level - 1) * 35;
 
 function calculateStats(type, level){
   const b=CLASSES[type];
+  const steps=Math.floor((level-1)/2);
+  const constitution=b.constitution+steps;
+  const energy=b.energy+steps;
   return {
-    maxHp: b.constitution * 5 + level * 5,
-    maxMp: b.energy * 5 + b.mpBonus + (level - 1) * 2,
-    df: b.df + Math.floor((level - 1) / 2),
-    str: b.str + (level - 1),
-    int: b.int + (level - 1),
-    agi: b.agi + Math.floor((level - 1) / 2),
-    constitution: b.constitution + Math.floor((level - 1) / 2),
-    energy: b.energy + Math.floor((level - 1) / 3),
-    charisma: b.charisma + Math.floor((level - 1) / 3),
-    will: b.will + Math.floor((level - 1) / 3),
-    stealth: Math.min(50, b.stealth + (level - 1)),
-    perception: b.perception + Math.floor((level - 1) / 2)
+    // HP y MP dependen únicamente de su estadística asociada.
+    maxHp: constitution * 5,
+    maxMp: energy * 5,
+    df: b.df + steps,
+    str: b.str + steps,
+    int: b.int + steps,
+    agi: b.agi + Math.floor((level-1)/3),
+    constitution,
+    energy,
+    charisma: b.charisma + Math.floor((level-1)/3),
+    will: b.will + Math.floor((level-1)/3),
+    stealth: Math.min(50, b.stealth + Math.floor((level-1)/2)),
+    perception: b.perception + Math.floor((level-1)/3)
   };
 }
 
@@ -199,6 +205,7 @@ class BattleScene extends Phaser.Scene {
     this.units.forEach(u=>this.drawUnit(u));
 
     this.action='none'; this.active=null; this.turnQueue=[]; this.queueIndex=0; this.battleOver=false;
+    this.autoBattle=false;
     this.createHud(); this.buildTurnQueue(); this.beginTurn();
   }
   spawnUnit(type,team,col,row,level=1,recruitId=null){
@@ -230,9 +237,14 @@ class BattleScene extends Phaser.Scene {
     this.buttons.move=this.actionButton(665,610,'move','MOVER','1 AP',()=>this.selectAction('move'));
     this.buttons.attack=this.actionButton(785,610,'attack','ATACAR','2 AP',()=>this.selectAction('attack'));
     this.buttons.skill=this.actionButton(905,610,'skill','HABILIDAD','Bloqueada',()=>flashText(this,'La unidad todavía no ha aprendido una habilidad.',905,510,0x91c9ff));
-    this.buttons.end=this.actionButton(1025,610,'end','TERMINAR','Turno',()=>this.endTurn());
+    this.buttons.end=this.actionButton(1025,610,'end','TERMINAR','Turno',()=>{if(!this.autoBattle)this.endTurn();});
     this.turnPanel=this.add.container(12,68);
     this.statsContainer=null;
+    this.autoButton=this.add.rectangle(1168,42,184,48,0x241a31,.96).setStrokeStyle(2,0xb896d1).setInteractive({useHandCursor:true});
+    this.autoLabel=this.add.text(1168,42,'AUTO-BATTLE: NO',{fontSize:'15px',fontStyle:'bold',color:'#fff'}).setOrigin(.5);
+    this.autoButton.on('pointerover',()=>this.autoButton.setFillStyle(0x39264a,1));
+    this.autoButton.on('pointerout',()=>this.autoButton.setFillStyle(this.autoBattle?0x285f3c:0x241a31,.96));
+    this.autoButton.on('pointerdown',()=>this.toggleAutoBattle());
   }
   actionButton(x,y,tex,label,cost,cb){
     const bg=this.add.rectangle(x,y,98,118,0x261b33,.97).setStrokeStyle(2,0x917aa9).setInteractive({useHandCursor:true}).on('pointerdown',cb);
@@ -272,7 +284,11 @@ class BattleScene extends Phaser.Scene {
     this.highlightActive();
     if(this.active.team==='enemy'){
       this.infoText.setText(`Turno enemigo: ${this.active.name}`);
-      this.time.delayedCall(650,()=>this.runAI());
+      this.time.delayedCall(650,()=>this.runAIControlled(this.active));
+    } else if(this.autoBattle){
+      this.infoText.setText(`Auto-battle: ${this.active.name}`);
+      this.updateButtons();
+      this.time.delayedCall(500,()=>this.runAIControlled(this.active));
     } else {
       this.infoText.setText(`Tu turno: ${this.active.name}`);
       this.updateButtons();
@@ -280,7 +296,7 @@ class BattleScene extends Phaser.Scene {
   }
   highlightActive(){ if(this.active?.sprite)this.tweens.add({targets:this.active.sprite,scaleX:this.active.sprite.scaleX*1.08,scaleY:this.active.sprite.scaleY*1.08,yoyo:true,duration:250}); }
   selectAction(action){
-    if(this.battleOver||!this.active||this.active.team!=='player')return;
+    if(this.battleOver||!this.active||this.active.team!=='player'||this.autoBattle)return;
     if(action==='move'&&this.active.ap<1){flashText(this,'No tienes AP suficiente.',W/2,120,0xff7777);return;}
     if(action==='attack'&&this.active.ap<2){flashText(this,'No tienes AP suficiente.',W/2,120,0xff7777);return;}
     this.action=action; this.clearHighlights();
@@ -295,7 +311,7 @@ class BattleScene extends Phaser.Scene {
     }
   }
   onCell(col,row){
-    if(this.battleOver||!this.active||this.active.team!=='player')return;
+    if(this.battleOver||!this.active||this.active.team!=='player'||this.autoBattle)return;
     if(this.action==='move'){
       const valid=this.validMoves(this.active).some(p=>p.col===col&&p.row===row);
       if(valid)this.moveUnit(this.active,col,row,()=>{this.active.ap-=1;this.action='none';this.clearHighlights();this.updateHud();this.updateButtons();});
@@ -358,22 +374,50 @@ class BattleScene extends Phaser.Scene {
     this.action='none';this.clearHighlights();this.queueIndex++;
     this.time.delayedCall(240,()=>this.beginTurn());
   }
-  runAI(){
-    const u=this.active;if(!u?.alive||this.battleOver)return;
+  toggleAutoBattle(){
+    if(this.battleOver)return;
+    this.autoBattle=!this.autoBattle;
+    this.autoLabel.setText(`AUTO-BATTLE: ${this.autoBattle?'SÍ':'NO'}`);
+    this.autoButton.setFillStyle(this.autoBattle?0x285f3c:0x241a31,.96);
+    flashText(this,this.autoBattle?'Auto-battle activado':'Auto-battle desactivado',1160,92,this.autoBattle?0x70e596:0xffffff);
+    if(this.autoBattle&&this.active?.team==='player'){
+      this.clearHighlights();
+      this.action='none';
+      this.updateButtons();
+      this.time.delayedCall(250,()=>this.runAIControlled(this.active));
+    }
+  }
+  runAIControlled(u){
+    if(!u?.alive||this.battleOver||u!==this.active)return;
+    const enemyTeam=u.team==='player'?'enemy':'player';
     const loop=()=>{
-      if(this.battleOver||u.ap<=0){this.endTurn();return;}
+      if(this.battleOver||u!==this.active||!u.alive)return;
+      if(u.ap<=0){this.endTurn();return;}
       const front=this.frontTarget(u);
-      if(front&&front.team==='player'&&u.ap>=2){
-        this.attackUnit(u,front,()=>{u.ap-=2;this.updateHud();if(this.checkEnd())return;this.time.delayedCall(350,loop);});return;
+      if(front&&front.team===enemyTeam&&u.ap>=2){
+        this.attackUnit(u,front,()=>{
+          u.ap-=2;this.updateHud();
+          if(this.checkEnd())return;
+          this.time.delayedCall(350,loop);
+        });
+        return;
       }
       if(u.ap>=1){
-        const moves=this.validMoves(u); const players=this.units.filter(q=>q.alive&&q.team==='player');
-        if(!moves.length||!players.length){this.endTurn();return;}
-        const scored=moves.map(m=>({m,score:Math.min(...players.map(p=>Math.abs(p.col-m.col)+Math.abs(p.row-m.row)))+Phaser.Math.FloatBetween(0,.25)})).sort((a,b)=>a.score-b.score);
-        this.moveUnit(u,scored[0].m.col,scored[0].m.row,()=>{u.ap--;this.updateHud();this.time.delayedCall(350,loop);});return;
+        const moves=this.validMoves(u);
+        const targets=this.units.filter(q=>q.alive&&q.team===enemyTeam);
+        if(!moves.length||!targets.length){this.endTurn();return;}
+        const scored=moves.map(m=>({
+          m,
+          score:Math.min(...targets.map(t=>Math.abs(t.col-m.col)+Math.abs(t.row-m.row)))+Phaser.Math.FloatBetween(0,.25)
+        })).sort((a,b)=>a.score-b.score);
+        this.moveUnit(u,scored[0].m.col,scored[0].m.row,()=>{
+          u.ap--;this.updateHud();this.time.delayedCall(350,loop);
+        });
+        return;
       }
       this.endTurn();
-    };loop();
+    };
+    loop();
   }
   updateHud(){
     if(!this.active)return;
@@ -382,7 +426,7 @@ class BattleScene extends Phaser.Scene {
     this.resourceText.setText(`HP ${Math.max(0,this.active.hp)}/${this.active.maxHp}     MP ${this.active.mp}/${this.active.maxMp}     AP ${this.active.ap}/${this.active.maxAp}`);
   }
   updateButtons(){
-    const can=this.active?.team==='player';
+    const can=this.active?.team==='player'&&!this.autoBattle;
     Object.values(this.buttons).forEach(b=>{b.bg.setAlpha(can?1:.35);b.icon.setAlpha(can?1:.35);});
     if(!can)return;
     this.buttons.move.icon.clearTint();this.buttons.attack.icon.clearTint();
