@@ -181,16 +181,17 @@ class BattleScene extends Phaser.Scene {
     u.arrow=this.add.image(x,y+48,'arrow').setDisplaySize(25,25).setFlipX(u.team==='enemy').setAlpha(.72);
   }
   createHud(){
-    this.add.rectangle(W/2,622,1110,174,0x120d1b,.96).setStrokeStyle(3,0x786589);
-    this.portrait=this.add.image(145,620,'runePortrait').setDisplaySize(128,128);
-    this.nameText=this.add.text(222,552,'',{fontSize:'22px',fontStyle:'bold',color:'#fff'});
-    this.resourceText=this.add.text(222,588,'',{fontSize:'18px',color:'#eee6f4'});
-    this.actionInfo=this.add.text(222,650,'Selecciona una acción.',{fontSize:'15px',color:'#cfc4d8',wordWrap:{width:360}});
+    // La barra deja un margen interior amplio para que ningún retrato sobresalga.
+    this.add.rectangle(W/2,622,1160,174,0x120d1b,.96).setStrokeStyle(3,0x786589);
+    this.portrait=this.add.image(158,620,'runePortrait').setDisplaySize(124,124);
+    this.nameText=this.add.text(235,550,'',{fontSize:'21px',fontStyle:'bold',color:'#fff',wordWrap:{width:390}});
+    this.resourceText=this.add.text(235,586,'',{fontSize:'17px',color:'#eee6f4'});
+    this.actionInfo=this.add.text(235,644,'Selecciona una acción.',{fontSize:'14px',color:'#cfc4d8',wordWrap:{width:390},lineSpacing:3});
     this.buttons={};
-    this.buttons.move=this.actionButton(625,610,'move','MOVER','1 AP',()=>this.selectAction('move'));
-    this.buttons.attack=this.actionButton(737,610,'attack','ATACAR','2 AP',()=>this.selectAction('attack'));
-    this.buttons.skill=this.actionButton(849,610,'skill','HABILIDAD','Bloqueada',()=>flashText(this,'La unidad todavía no ha aprendido una habilidad.',849,510,0x91c9ff));
-    this.buttons.end=this.actionButton(961,610,'end','TERMINAR','Turno',()=>this.endTurn());
+    this.buttons.move=this.actionButton(665,610,'move','MOVER','1 AP',()=>this.selectAction('move'));
+    this.buttons.attack=this.actionButton(785,610,'attack','ATACAR','2 AP',()=>this.selectAction('attack'));
+    this.buttons.skill=this.actionButton(905,610,'skill','HABILIDAD','Bloqueada',()=>flashText(this,'La unidad todavía no ha aprendido una habilidad.',905,510,0x91c9ff));
+    this.buttons.end=this.actionButton(1025,610,'end','TERMINAR','Turno',()=>this.endTurn());
     this.turnPanel=this.add.container(12,68);
     this.statsContainer=null;
   }
@@ -353,20 +354,43 @@ class BattleScene extends Phaser.Scene {
   showStats(u){
     this.statsContainer?.destroy(true);
     const b=CLASSES[u.type];
-    const c=this.add.container(895,72).setDepth(40); this.statsContainer=c;
-    const panel=this.add.rectangle(0,0,365,520,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);
-    const title=this.add.text(18,18,u.name,{fontSize:'21px',fontStyle:'bold',color:'#fff',wordWrap:{width:280}});
-    const subtitle=this.add.text(18,48,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});
-    const close=this.add.text(326,13,'✕',{fontSize:'27px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});
-    const portrait=this.add.image(77,141,b.portrait).setDisplaySize(112,112);
-    const combat=this.add.text(154,88,[`HP   ${Math.max(0,u.hp)} / ${u.maxHp}`,`MP   ${u.mp} / ${u.maxMp}`,`AP   ${u.ap} / ${u.maxAp}`,`DF   ${u.df}`,`FUE  ${u.str}`,`INT  ${u.int}`,`AGI  ${u.agi}`].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:4});
-    const divider=this.add.rectangle(18,211,329,2,0x786589,.7).setOrigin(0);
-    const blessingLabel=this.add.text(18,228,'Bendición',{fontSize:'15px',color:'#bfb4cb'});
+    const c=this.add.container(815,35).setDepth(40); this.statsContainer=c;
+    const panel=this.add.rectangle(0,0,430,650,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);
+    const title=this.add.text(20,17,u.name,{fontSize:'22px',fontStyle:'bold',color:'#fff',wordWrap:{width:330}});
+    const subtitle=this.add.text(20,54,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});
+    const close=this.add.text(383,12,'✕',{fontSize:'30px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});
+
+    const portrait=this.add.image(91,159,b.portrait).setDisplaySize(120,120);
+    const combat=this.add.text(172,101,[
+      `HP     ${Math.max(0,u.hp)} / ${u.maxHp}`,
+      `MP     ${u.mp} / ${u.maxMp}`,
+      `AP     ${u.ap} / ${u.maxAp}`,
+      `DF     ${u.df}`,
+      `FUE    ${u.str}`,
+      `INT    ${u.int}`,
+      `AGI    ${u.agi}`
+    ].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:5});
+
+    const divider=this.add.rectangle(20,257,390,2,0x786589,.7).setOrigin(0);
+    const blessingLabel=this.add.text(20,274,'Bendición',{fontSize:'16px',color:'#bfb4cb'});
     const blessingKey={NotPikachu:'notpika',Hojafail:'hojafail',Fotopie:'fotopie','Chimech-o':'chimecho'}[b.blessing];
-    const blessingIcon=this.add.image(72,287,blessingKey).setDisplaySize(86,86);
-    const blessingName=this.add.text(126,266,b.blessing,{fontSize:'19px',fontStyle:'bold',color:'#fff',wordWrap:{width:205}});
-    const extras=this.add.text(18,349,[`Energía: ${b.energy}`,`Carisma: ${b.charisma}`,`Voluntad: ${b.will}`,`Sigilo: ${b.stealth}%`, `Percepción: ${b.perception}`,`Orientación: ${u.team==='player'?'Derecha':'Izquierda'}`].join('     '),{fontSize:'15px',color:'#d1c5dc',wordWrap:{width:325},lineSpacing:10});
-    c.add([panel,title,subtitle,close,portrait,combat,divider,blessingLabel,blessingIcon,blessingName,extras]);
+    const blessingIcon=this.add.image(83,354,blessingKey).setDisplaySize(100,100);
+    const blessingName=this.add.text(151,332,b.blessing,{fontSize:'20px',fontStyle:'bold',color:'#fff',wordWrap:{width:235}});
+
+    const divider2=this.add.rectangle(20,421,390,2,0x786589,.7).setOrigin(0);
+    const leftStats=this.add.text(20,448,[
+      `Energía: ${b.energy}`,
+      `Voluntad: ${b.will}`,
+      `Percepción: ${b.perception}`
+    ].join('\n'),{fontSize:'16px',color:'#d1c5dc',lineSpacing:13});
+    const rightStats=this.add.text(220,448,[
+      `Carisma: ${b.charisma}`,
+      `Sigilo: ${b.stealth}%`,
+      `Orientación:`,
+      `${u.team==='player'?'Derecha':'Izquierda'}`
+    ].join('\n'),{fontSize:'16px',color:'#d1c5dc',lineSpacing:13});
+
+    c.add([panel,title,subtitle,close,portrait,combat,divider,blessingLabel,blessingIcon,blessingName,divider2,leftStats,rightStats]);
   }
   clearHighlights(){ this.cells.forEach(c=>{c.rect.setFillStyle(c.c<3?0x286946:0x7b303a,.30);}); }
   highlightCell(col,row,color){ const cell=this.cells.find(c=>c.c===col&&c.r===row);cell?.rect.setFillStyle(color,.68); }
