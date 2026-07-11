@@ -26,7 +26,7 @@ export class BattleScene extends Phaser.Scene{
       this.cells.push({c,r,x,y,rect});
     }
     this.units=[];this.nextId=1;this.lastAbilityByTeam={player:null,enemy:null};
-    this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities,p.blessing));
+    this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities,p.blessing,{name:p.name}));
     const difficulty=Math.min(5,Math.floor((SAVE.round-1)/2)),scale=earlyEnemyScaling(SAVE.round);
     this.enemyPositions.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,(p.level||1)+difficulty),null,scale,p.learnedAbilities,p.blessing));
     this.applyBlessings();this.units.forEach(u=>this.drawUnit(u));

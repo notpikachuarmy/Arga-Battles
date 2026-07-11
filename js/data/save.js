@@ -21,7 +21,8 @@ export function createRecruit(type = randomClass()){
     level: 1,
     xp: 0,
     blessing: randomBlessing(CLASSES[type].defaultBlessing),
-    learnedAbilities: initial
+    learnedAbilities: initial,
+    customName: null
   };
 }
 
