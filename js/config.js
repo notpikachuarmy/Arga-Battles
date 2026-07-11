@@ -19,5 +19,7 @@ export const BALANCE = {
   startingSoldierPoints: 6,
   victorySoldierPoints: 1,
   xpBase: 50,
-  xpPerRound: 10
+  xpPerRound: 10,
+  mpRegenEveryTurns: 3,
+  mpRegenPercent: 0.20
 };

@@ -1,6 +1,7 @@
 import { GAME, BALANCE } from '../config.js';
 import { CLASSES } from '../data/classes.js';
 import { ABILITIES } from '../data/abilities.js';
+import { BLESSINGS, blessingBonusForCount } from '../data/blessings.js';
 import { SAVE } from '../data/save.js';
 import { calculateStats, earlyEnemyScaling, awardGlobalXp } from '../systems/progression.js';
 import { rollDie } from '../utils/dice.js';
@@ -21,18 +22,33 @@ export class BattleScene extends Phaser.Scene{
       this.cells.push({c,r,x,y,rect});
     }
     this.units=[];this.nextId=1;
-    this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities));
+    this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities,p.blessing));
     const difficulty=Math.min(5,Math.floor((SAVE.round-1)/2));const scale=earlyEnemyScaling(SAVE.round);
-    this.enemyPositions.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,(p.level||1)+difficulty),null,scale,p.learnedAbilities));
+    this.enemyPositions.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,(p.level||1)+difficulty),null,scale,p.learnedAbilities,p.blessing));
+    this.applyBlessings();
     this.units.forEach(u=>this.drawUnit(u));
     this.action='none';this.active=null;this.turnQueue=[];this.queueIndex=0;this.battleOver=false;this.autoBattle=false;
     this.createHud();this.buildTurnQueue();this.beginTurn();
   }
-  spawnUnit(type,team,col,row,level=1,recruitId=null,scale=null,learnedAbilities=[]){
+  spawnUnit(type,team,col,row,level=1,recruitId=null,scale=null,learnedAbilities=[],blessing=null){
     const stats=calculateStats(type,level);
     if(team==='enemy'&&scale){stats.maxHp=Math.max(5,Math.round(stats.maxHp*scale.hp));for(const key of ['df','str','int','agi','charisma','will','perception'])stats[key]=Math.max(1,Math.round(stats[key]*scale.combat));}
-    const u={id:this.nextId++,recruitId,type,team,col,row,level,name:CLASSES[type].name,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:[...(learnedAbilities||[])],buffs:[],paralyzedTurns:0};
+    const u={id:this.nextId++,recruitId,type,team,col,row,level,name:CLASSES[type].name,blessing:blessing||CLASSES[type].defaultBlessing,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:[...(learnedAbilities||[])],buffs:[],paralyzedTurns:0,turnsTaken:0,blessingBonus:0};
     this.units.push(u);return u;
+  }
+  applyBlessings(){
+    for(const team of ['player','enemy']){
+      const teamUnits=this.units.filter(u=>u.team===team);
+      const counts={};
+      teamUnits.forEach(u=>counts[u.blessing]=(counts[u.blessing]||0)+1);
+      teamUnits.forEach(u=>{
+        const blessing=BLESSINGS[u.blessing];
+        if(!blessing)return;
+        const bonus=blessingBonusForCount(counts[u.blessing]||1);
+        u[blessing.stat]+=bonus;
+        u.blessingBonus=bonus;
+      });
+    }
   }
   drawUnit(u){
     const{x,y}=this.cellCenter(u.col,u.row);u.sprite=this.add.image(x,y,u.type).setDisplaySize(82,82).setFlipX(u.team==='enemy').setInteractive({useHandCursor:true});if(u.team==='enemy')u.sprite.setTint(0xffdddd);
@@ -51,7 +67,15 @@ export class BattleScene extends Phaser.Scene{
   refreshTurnOrder(){this.turnPanel.removeAll(true);const alive=this.turnQueue.filter(u=>u.alive);alive.forEach((u,i)=>{const y=i*68,active=u===this.active;const aura=this.add.circle(50,y+35,active?31:27,u.team==='player'?0x32d46f:0xe34754,active?1:.65);const img=this.add.image(50,y+35,u.type).setDisplaySize(active?55:48,active?55:48).setFlipX(u.team==='enemy');const hp=this.add.text(83,y+26,`${Math.max(0,u.hp)}/${u.maxHp}`,{fontSize:'12px',color:'#fff'});this.turnPanel.add([aura,img,hp]);});}
   beginTurn(){
     if(this.battleOver)return;this.clearHighlights();this.action='none';while(this.queueIndex<this.turnQueue.length&&!this.turnQueue[this.queueIndex].alive)this.queueIndex++;if(this.queueIndex>=this.turnQueue.length)this.buildTurnQueue();this.active=this.turnQueue[this.queueIndex];if(!this.active)return;
-    this.active.ap=this.active.maxAp;this.updateHud();this.refreshTurnOrder();
+    this.active.ap=this.active.maxAp;
+    this.active.turnsTaken++;
+    if(this.active.turnsTaken%BALANCE.mpRegenEveryTurns===0&&this.active.mp<this.active.maxMp){
+      const restored=Math.max(1,Math.ceil(this.active.maxMp*BALANCE.mpRegenPercent));
+      const actual=Math.min(restored,this.active.maxMp-this.active.mp);
+      this.active.mp+=actual;
+      flashText(this,`+${actual} MP`,this.active.sprite.x,this.active.sprite.y-78,0x71bfff);
+    }
+    this.updateHud();this.refreshTurnOrder();
     if(this.active.paralyzedTurns>0){this.active.paralyzedTurns--;flashText(this,`${this.active.name} está paralizado.`,GAME.width/2,110,0x91c9ff);this.time.delayedCall(700,()=>this.endTurn());return;}
     if(this.active.team==='enemy'||this.autoBattle){this.infoText.setText(`${this.active.team==='enemy'?'Turno enemigo':'Auto-battle'}: ${this.active.name}`);this.time.delayedCall(450,()=>this.runAIControlled(this.active));}else{this.infoText.setText(`Tu turno: ${this.active.name}`);this.updateButtons();}
   }
@@ -86,10 +110,10 @@ export class BattleScene extends Phaser.Scene{
       targets.forEach(t=>{const damage=Math.max(1,rollDie(3)+Math.floor(u.str/4)-Math.floor(t.df/4));t.hp-=damage;this.spawnFx(t,'liquidFx');floatNumber(this,`-${damage}`,t.sprite.x,t.sprite.y-62,0xff626f);this.updateUnitHp(t);if(t.hp<=0)this.killUnit(t);});this.payAbility(u,a);this.checkEnd();return;
     }
     if(a.id==='devilBloodThorns'){
-      u.str+=2;u.df+=2;u.buffs.push({id:'bloodThorns',remaining:2,str:2,df:2});u.ap=Math.min(u.maxAp,u.ap+1);this.spawnFx(u,'bloodFx');flashText(this,'+2 FUE · +2 DF · +1 AP',u.sprite.x,u.sprite.y-80,0xff8a9a);this.payAbility(u,a);return;
+      u.str+=2;u.df+=2;u.buffs.push({id:'bloodThorns',remaining:2,str:2,df:2});this.spawnFx(u,'bloodFx');flashText(this,'+2 FUE · +2 DF · Recupera 1 AP',u.sprite.x,u.sprite.y-80,0xff8a9a);this.payAbility(u,a,1);return;
     }
   }
-  payAbility(u,a){u.ap-=a.apCost;u.mp-=a.mpCost;this.afterAction();this.checkEnd();}
+  payAbility(u,a,apRefund=0){u.ap=Math.min(u.maxAp,u.ap-a.apCost+apRefund);u.mp-=a.mpCost;this.afterAction();this.checkEnd();}
   afterAction(){this.action='none';this.clearHighlights();this.updateHud();this.updateButtons();}
   playHit(attacker,target,damage,fxKey,done){const dir=attacker.team==='player'?1:-1,ox=attacker.sprite.x;this.tweens.add({targets:attacker.sprite,x:ox+dir*22,duration:90,yoyo:true,onComplete:()=>{target.hp-=damage;this.spawnFx(target,fxKey);floatNumber(this,`-${damage}`,target.sprite.x,target.sprite.y-62,0xff626f);this.updateUnitHp(target);if(target.hp<=0)this.killUnit(target);done?.();}});}
   spawnFx(target,key){const fx=this.add.image(target.sprite.x,target.sprite.y,key).setDisplaySize(110,110).setAlpha(.95);this.tweens.add({targets:fx,alpha:0,scale:1.4,duration:300,onComplete:()=>fx.destroy()});}
@@ -116,7 +140,7 @@ export class BattleScene extends Phaser.Scene{
   updateHud(){if(!this.active)return;this.portrait.setTexture(CLASSES[this.active.type].portrait);this.nameText.setText(`${this.active.name} · Nv. ${this.active.level}`);this.resourceText.setText(`HP ${Math.max(0,this.active.hp)}/${this.active.maxHp}     MP ${this.active.mp}/${this.active.maxMp}     AP ${this.active.ap}/${this.active.maxAp}`);const a=this.selectedAbility();if(a){this.buttons.skill.icon.setTexture(a.icon);this.buttons.skill.ct.setText(`${a.apCost} AP · ${a.mpCost} MP`);}else{this.buttons.skill.icon.setTexture('skill');this.buttons.skill.ct.setText('Bloqueada');}}
   updateButtons(){const can=this.active?.team==='player'&&!this.autoBattle;Object.values(this.buttons).forEach(b=>{b.bg.setAlpha(can?1:.35);b.icon.setAlpha(can?1:.35);b.icon.clearTint();});if(!can)return;const a=this.selectedAbility();if(this.active.ap<1)this.buttons.move.icon.setTint(0xff5555);if(this.active.ap<2)this.buttons.attack.icon.setTint(0xff5555);if(!a)this.buttons.skill.icon.setTint(0x222222);else if(this.active.ap<a.apCost||this.active.mp<a.mpCost)this.buttons.skill.icon.setTint(0xff5555);}
   showStats(u){
-    this.statsContainer?.destroy(true);const b=CLASSES[u.type],c=this.add.container(815,35).setDepth(40);this.statsContainer=c;const panel=this.add.rectangle(0,0,430,650,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);const title=this.add.text(20,17,u.name,{fontSize:'22px',fontStyle:'bold',color:'#fff'});const subtitle=this.add.text(20,54,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});const close=this.add.text(383,12,'✕',{fontSize:'30px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});const portrait=this.add.image(91,159,b.portrait).setDisplaySize(120,120);const combat=this.add.text(172,101,[`HP ${Math.max(0,u.hp)}/${u.maxHp}`,`MP ${u.mp}/${u.maxMp}`,`AP ${u.ap}/${u.maxAp}`,`DF ${u.df}`,`FUE ${u.str}`,`INT ${u.int}`,`AGI ${u.agi}`].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:5});const blessingKey={NotPikachu:'notpika',Hojafail:'hojafail',Fotopie:'fotopie','Chimech-o':'chimecho'}[b.blessing];const blessing=this.add.image(80,340,blessingKey).setDisplaySize(90,90);const blessingName=this.add.text(145,322,b.blessing,{fontSize:'20px',fontStyle:'bold',color:'#fff'});const stats=this.add.text(20,430,[`Constitución: ${u.constitution}     Energía: ${u.energy}`,`Carisma: ${u.charisma}             Voluntad: ${u.will}`,`Sigilo: ${u.stealth}%              Percepción: ${u.perception}`,`Orientación: ${u.team==='player'?'Derecha':'Izquierda'}`].join('\n'),{fontSize:'15px',color:'#d1c5dc',lineSpacing:16});c.add([panel,title,subtitle,close,portrait,combat,blessing,blessingName,stats]);
+    this.statsContainer?.destroy(true);const b=CLASSES[u.type],c=this.add.container(815,35).setDepth(40);this.statsContainer=c;const panel=this.add.rectangle(0,0,430,650,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);const title=this.add.text(20,17,u.name,{fontSize:'22px',fontStyle:'bold',color:'#fff'});const subtitle=this.add.text(20,54,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});const close=this.add.text(383,12,'✕',{fontSize:'30px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});const portrait=this.add.image(91,159,b.portrait).setDisplaySize(120,120);const combat=this.add.text(172,101,[`HP ${Math.max(0,u.hp)}/${u.maxHp}`,`MP ${u.mp}/${u.maxMp}`,`AP ${u.ap}/${u.maxAp}`,`DF ${u.df}`,`FUE ${u.str}`,`INT ${u.int}`,`AGI ${u.agi}`].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:5});const blessingData=BLESSINGS[u.blessing];const blessing=this.add.image(80,340,blessingData.texture).setDisplaySize(90,90);const blessingName=this.add.text(145,312,`${u.blessing}\n+${u.blessingBonus} ${blessingData.statLabel}`,{fontSize:'18px',fontStyle:'bold',color:'#fff',lineSpacing:5});const stats=this.add.text(20,430,[`Constitución: ${u.constitution}     Energía: ${u.energy}`,`Carisma: ${u.charisma}             Voluntad: ${u.will}`,`Sigilo: ${u.stealth}%              Percepción: ${u.perception}`].join('\n'),{fontSize:'15px',color:'#d1c5dc',lineSpacing:18});c.add([panel,title,subtitle,close,portrait,combat,blessing,blessingName,stats]);
   }
   updateUnitHp(u){const ratio=Phaser.Math.Clamp(u.hp/u.maxHp,0,1);u.hpBar.width=74*ratio;u.hpBar.fillColor=ratio>.5?0x42d36e:ratio>.25?0xf3bf4d:0xe54452;}
   killUnit(u){u.alive=false;this.tweens.add({targets:[u.sprite,u.hpBack,u.hpBar,u.arrow],alpha:0,y:u.sprite.y+25,duration:350,onComplete:()=>{[u.sprite,u.hpBack,u.hpBar,u.arrow].forEach(x=>x.setVisible(false));this.refreshTurnOrder();}});}

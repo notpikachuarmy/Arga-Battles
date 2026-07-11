@@ -1,5 +1,6 @@
 import { GAME } from '../config.js';
 import { CLASSES } from '../data/classes.js';
+import { BLESSINGS } from '../data/blessings.js';
 import { SAVE, randomTeam } from '../data/save.js';
 import { soldierCost } from '../systems/progression.js';
 import { makeButton, flashText } from '../utils/helpers.js';
@@ -32,6 +33,7 @@ export class PlacementScene extends Phaser.Scene{
     const cost=soldierCost(unit.recruit);
     const bg=this.add.rectangle(x+118,y,236,118,0x171122,.90).setStrokeStyle(3,0x75618c).setInteractive({useHandCursor:true});
     const portrait=this.add.image(x+52,y,CLASSES[unit.type].portrait).setDisplaySize(90,90).setInteractive({useHandCursor:true});
+    const blessing=BLESSINGS[unit.recruit.blessing];this.add.image(x+86,y+36,blessing.texture).setDisplaySize(30,30);
     this.add.text(x+108,y-38,`${CLASSES[unit.type].name}\nNv. ${unit.recruit.level} · Coste ${cost}`,{fontSize:'15px',fontStyle:'bold',color:'#fff',wordWrap:{width:124}});
     const state=this.add.text(x+108,y+30,'Sin colocar',{fontSize:'14px',color:'#d8ccdf'});
     const select=()=>{this.selected=index;this.refreshCards();};bg.on('pointerdown',select);portrait.on('pointerdown',select);
@@ -56,11 +58,11 @@ export class PlacementScene extends Phaser.Scene{
   createEnemyPreview(){
     this.enemyTeam=randomTeam();
     const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,3);
-    this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,level:1,learnedAbilities:recruit.learnedAbilities,...slots[i]}));
+    this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,level:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]}));
     this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.gridY+p.row*GAME.tile+GAME.tile/2,p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
   }
   startBattle(){
     if(!this.roster.every(q=>q.col!==null)){flashText(this,'Debes colocar las tres unidades.',GAME.width/2,620,0xffbd69);return;}
-    this.scene.start('Battle',{positions:this.roster.map(u=>({type:u.type,recruitId:u.recruit.id,level:u.recruit.level,learnedAbilities:u.recruit.learnedAbilities,col:u.col,row:u.row})),enemyPositions:this.enemyPositions});
+    this.scene.start('Battle',{positions:this.roster.map(u=>({type:u.type,recruitId:u.recruit.id,level:u.recruit.level,blessing:u.recruit.blessing,learnedAbilities:u.recruit.learnedAbilities,col:u.col,row:u.row})),enemyPositions:this.enemyPositions});
   }
 }
