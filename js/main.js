@@ -12,7 +12,10 @@ const CLASSES = {
   demon: { name: 'Sangre Demoníaca', texture: 'demon', portrait: 'demonPortrait', blessing: 'Chimech-o', hp: 80, mp: 40, df: 5, str: 12, int: 9, agi: 7, energy: 8, charisma: 6, will: 11, stealth: 5, perception: 7 }
 };
 
-const SAVE = { round: 1, soldierPoints: 6 };
+const SAVE = { round: 1, soldierPoints: 6, playerRoster: [] };
+const CLASS_KEYS = Object.keys(CLASSES);
+const randomClass = () => Phaser.Utils.Array.GetRandom(CLASS_KEYS);
+const randomTeam = () => [randomClass(), randomClass(), randomClass()];
 
 class BootScene extends Phaser.Scene {
   constructor(){ super('Boot'); }
@@ -54,10 +57,12 @@ class MenuScene extends Phaser.Scene {
     this.add.rectangle(W/2,H/2,W,H,0x080510,.40);
     const logo=this.add.image(W/2,175,'logo');
     const maxW=620; if(logo.width>maxW) logo.setScale(maxW/logo.width);
-    this.add.text(W/2,310,'PROTOTIPO DE COMBATE · v0.1',{fontFamily:'Arial',fontSize:'23px',color:'#f1eaff',stroke:'#241735',strokeThickness:4}).setOrigin(.5);
-    makeButton(this,W/2,420,330,72,'COMENZAR RUN',()=>{ SAVE.round=1; SAVE.soldierPoints=6; this.scene.start('Placement'); });
-    this.add.text(W/2,512,'Coloca tus 3 unidades y derrota rondas cada vez más difíciles.',{fontFamily:'Arial',fontSize:'18px',color:'#ddd5e9'}).setOrigin(.5);
-    this.add.text(W/2,548,'Mover: 1 AP · Ataque frontal: 2 AP · 3 AP por turno',{fontFamily:'Arial',fontSize:'17px',color:'#bcb2ca'}).setOrigin(.5);
+    makeButton(this,W/2,420,330,72,'COMENZAR RUN',()=>{
+      SAVE.round=1;
+      SAVE.soldierPoints=6;
+      SAVE.playerRoster=randomTeam();
+      this.scene.start('Placement');
+    });
   }
 }
 
@@ -81,7 +86,8 @@ class PlacementScene extends Phaser.Scene {
     this.add.text(GRID_X+TILE*1.5,GRID_Y-25,'TU CAMPO',{fontSize:'17px',color:'#8ff0ae'}).setOrigin(.5);
     this.add.text(GRID_X+TILE*4.5,GRID_Y-25,'ENEMIGO',{fontSize:'17px',color:'#ff9ba5'}).setOrigin(.5);
 
-    this.roster=['rune','formless','demon'].map((type,i)=>({type,slot:i,row:null,col:null,sprite:null}));
+    if(!SAVE.playerRoster.length) SAVE.playerRoster=randomTeam();
+    this.roster=SAVE.playerRoster.map((type,i)=>({type,slot:i,row:null,col:null,sprite:null}));
     this.selected=0;
     this.cards=[];
     this.roster.forEach((u,i)=>this.createRosterCard(u,i,60,185+i*142));
@@ -113,18 +119,27 @@ class PlacementScene extends Phaser.Scene {
     this.startBtn.setAlpha(ready?1:.45);
   }
   enemyPreview(){
-    const types=['rune','formless','demon']; const rows=[0,1,2]; const col=4;
-    types.forEach((type,i)=>this.add.image(GRID_X+col*TILE+TILE/2,GRID_Y+rows[i]*TILE+TILE/2,type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
+    this.enemyTeam=randomTeam();
+    const slots=Phaser.Utils.Array.Shuffle([
+      {col:3,row:0},{col:3,row:1},{col:3,row:2},
+      {col:4,row:0},{col:4,row:1},{col:4,row:2},
+      {col:5,row:0},{col:5,row:1},{col:5,row:2}
+    ]).slice(0,3);
+    this.enemyPositions=this.enemyTeam.map((type,i)=>({type,...slots[i]}));
+    this.enemyPositions.forEach(p=>this.add.image(GRID_X+p.col*TILE+TILE/2,GRID_Y+p.row*TILE+TILE/2,p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
   }
   startBattle(){
     if(!this.roster.every(q=>q.col!==null)){ flashText(this,'Debes colocar las tres unidades.',W/2,620,0xffbd69); return; }
-    this.scene.start('Battle',{positions:this.roster.map(u=>({type:u.type,col:u.col,row:u.row}))});
+    this.scene.start('Battle',{
+      positions:this.roster.map(u=>({type:u.type,col:u.col,row:u.row})),
+      enemyPositions:this.enemyPositions
+    });
   }
 }
 
 class BattleScene extends Phaser.Scene {
   constructor(){ super('Battle'); }
-  init(data){ this.startPositions=data.positions; }
+  init(data){ this.startPositions=data.positions; this.enemyPositions=data.enemyPositions || []; }
   create(){
     this.add.image(W/2,H/2,'battleBg').setDisplaySize(W,H);
     this.add.rectangle(W/2,H/2,W,H,0x08050d,.17);
@@ -140,9 +155,8 @@ class BattleScene extends Phaser.Scene {
     this.units=[]; this.nextId=1;
     this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row));
     const difficulty=Math.min(5,Math.floor((SAVE.round-1)/2));
-    const enemyTypes=['rune','formless','demon'];
-    const cols=SAVE.round>=4?[3,4,4]:[4,4,4];
-    enemyTypes.forEach((type,i)=>this.spawnUnit(type,'enemy',cols[i],i,difficulty));
+    const enemies=this.enemyPositions.length?this.enemyPositions:randomTeam().map((type,i)=>({type,col:4,row:i}));
+    enemies.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,difficulty));
     this.units.forEach(u=>this.drawUnit(u));
 
     this.action='none'; this.active=null; this.turnQueue=[]; this.queueIndex=0; this.battleOver=false;
@@ -158,30 +172,33 @@ class BattleScene extends Phaser.Scene {
     const {x,y}=this.cellCenter(u.col,u.row);
     u.sprite=this.add.image(x,y,u.type).setDisplaySize(82,82).setFlipX(u.team==='enemy').setInteractive({useHandCursor:true});
     if(u.team==='enemy')u.sprite.setTint(0xffdddd);
-    u.sprite.on('pointerdown',()=>this.showStats(u));
+    u.sprite.on('pointerdown',()=>{
+      if(this.action==='attack' && this.active?.team==='player') this.tryAttackTarget(u);
+      else this.showStats(u);
+    });
     u.hpBack=this.add.rectangle(x,y-48,76,8,0x190d14,.95).setStrokeStyle(1,0xffffff,.35);
     u.hpBar=this.add.rectangle(x-37,y-48,74,6,0x42d36e,1).setOrigin(0,.5);
     u.arrow=this.add.image(x,y+48,'arrow').setDisplaySize(25,25).setFlipX(u.team==='enemy').setAlpha(.72);
   }
   createHud(){
-    this.add.rectangle(W/2,622,920,174,0x120d1b,.94).setStrokeStyle(3,0x786589);
-    this.portrait=this.add.image(205,620,'runePortrait').setDisplaySize(128,128);
-    this.nameText=this.add.text(282,554,'',{fontSize:'22px',fontStyle:'bold',color:'#fff'});
-    this.resourceText=this.add.text(282,588,'',{fontSize:'18px',color:'#eee6f4',lineSpacing:8});
-    this.actionInfo=this.add.text(282,666,'Selecciona una acción.',{fontSize:'15px',color:'#bfb4cb'});
+    this.add.rectangle(W/2,622,1110,174,0x120d1b,.96).setStrokeStyle(3,0x786589);
+    this.portrait=this.add.image(145,620,'runePortrait').setDisplaySize(128,128);
+    this.nameText=this.add.text(222,552,'',{fontSize:'22px',fontStyle:'bold',color:'#fff'});
+    this.resourceText=this.add.text(222,588,'',{fontSize:'18px',color:'#eee6f4'});
+    this.actionInfo=this.add.text(222,650,'Selecciona una acción.',{fontSize:'15px',color:'#cfc4d8',wordWrap:{width:360}});
     this.buttons={};
-    this.buttons.move=this.actionButton(620,610,'move','MOVER','1 AP',()=>this.selectAction('move'));
-    this.buttons.attack=this.actionButton(740,610,'attack','ATACAR','2 AP',()=>this.selectAction('attack'));
-    this.buttons.skill=this.actionButton(860,610,'skill','HABILIDAD','Próximamente',()=>flashText(this,'Las habilidades se definirán después.',860,520,0x91c9ff));
-    this.buttons.end=this.actionButton(980,610,'end','TERMINAR','Turno',()=>this.endTurn());
-    this.turnPanel=this.add.container(20,75);
+    this.buttons.move=this.actionButton(625,610,'move','MOVER','1 AP',()=>this.selectAction('move'));
+    this.buttons.attack=this.actionButton(737,610,'attack','ATACAR','2 AP',()=>this.selectAction('attack'));
+    this.buttons.skill=this.actionButton(849,610,'skill','HABILIDAD','Bloqueada',()=>flashText(this,'La unidad todavía no ha aprendido una habilidad.',849,510,0x91c9ff));
+    this.buttons.end=this.actionButton(961,610,'end','TERMINAR','Turno',()=>this.endTurn());
+    this.turnPanel=this.add.container(12,68);
     this.statsContainer=null;
   }
   actionButton(x,y,tex,label,cost,cb){
-    const bg=this.add.rectangle(x,y,104,116,0x261b33,.95).setStrokeStyle(2,0x917aa9).setInteractive({useHandCursor:true}).on('pointerdown',cb);
-    const icon=this.add.image(x,y-16,tex).setDisplaySize(62,62);
-    const txt=this.add.text(x,y+28,label,{fontSize:'13px',fontStyle:'bold',color:'#fff'}).setOrigin(.5);
-    const ct=this.add.text(x,y+47,cost,{fontSize:'12px',color:'#d1c5dd'}).setOrigin(.5);
+    const bg=this.add.rectangle(x,y,98,118,0x261b33,.97).setStrokeStyle(2,0x917aa9).setInteractive({useHandCursor:true}).on('pointerdown',cb);
+    const icon=this.add.image(x,y-18,tex).setDisplaySize(58,58);
+    const txt=this.add.text(x,y+25,label,{fontSize:'12px',fontStyle:'bold',color:'#fff'}).setOrigin(.5);
+    const ct=this.add.text(x,y+45,cost,{fontSize:'11px',color:'#d1c5dd'}).setOrigin(.5);
     return {bg,icon,txt,ct};
   }
   buildTurnQueue(){
@@ -231,7 +248,7 @@ class BattleScene extends Phaser.Scene {
       this.actionInfo.setText('Movimiento · 1 AP · Elige una casilla adyacente libre.');
       this.validMoves(this.active).forEach(p=>this.highlightCell(p.col,p.row,0x50dc84));
     } else {
-      this.actionInfo.setText('Ataque básico · 2 AP · Solo golpea la casilla situada delante.');
+      this.actionInfo.setText('Ataque básico · 2 AP · Pulsa la casilla roja o directamente al enemigo situado delante.');
       const target=this.frontTarget(this.active);
       if(target)this.highlightCell(target.col,target.row,0xff525f);
       else flashText(this,'No hay ningún enemigo delante.',W/2,120,0xffbd69);
@@ -244,8 +261,28 @@ class BattleScene extends Phaser.Scene {
       if(valid)this.moveUnit(this.active,col,row,()=>{this.active.ap-=1;this.action='none';this.clearHighlights();this.updateHud();this.updateButtons();});
     } else if(this.action==='attack'){
       const t=this.unitAt(col,row); const front=this.frontTarget(this.active);
-      if(t&&front===t)this.attackUnit(this.active,t,()=>{this.active.ap-=2;this.action='none';this.clearHighlights();this.updateHud();this.updateButtons();if(this.checkEnd())return;});
+      if(t&&front===t)this.tryAttackTarget(t);
     }
+  }
+  tryAttackTarget(target){
+    if(!target?.alive || target.team!=='enemy') return;
+    const front=this.frontTarget(this.active);
+    if(front!==target){
+      flashText(this,'Solo puedes atacar al enemigo situado justo delante.',W/2,120,0xffbd69);
+      return;
+    }
+    if(this.active.ap<2){
+      flashText(this,'No tienes AP suficiente.',W/2,120,0xff7777);
+      return;
+    }
+    this.attackUnit(this.active,target,()=>{
+      this.active.ap-=2;
+      this.action='none';
+      this.clearHighlights();
+      this.updateHud();
+      this.updateButtons();
+      this.checkEnd();
+    });
   }
   validMoves(u){
     const candidates=[[u.col+1,u.row],[u.col-1,u.row],[u.col,u.row+1],[u.col,u.row-1]];
@@ -315,14 +352,21 @@ class BattleScene extends Phaser.Scene {
   }
   showStats(u){
     this.statsContainer?.destroy(true);
-    const b=CLASSES[u.type]; const c=this.add.container(955,80); this.statsContainer=c;
-    const panel=this.add.rectangle(0,0,300,390,0x100b18,.97).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);
-    const title=this.add.text(18,18,`${u.name}\nNivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'19px',fontStyle:'bold',color:'#fff',wordWrap:{width:220}});
-    const close=this.add.text(267,14,'✕',{fontSize:'25px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});
-    const portrait=this.add.image(66,116,b.portrait).setDisplaySize(92,92);
-    const stats=this.add.text(126,82,[`HP  ${Math.max(0,u.hp)} / ${u.maxHp}`,`MP  ${u.mp} / ${u.maxMp}`,`DF  ${u.df}`,`Fuerza  ${u.str}`,`Inteligencia  ${u.int}`,`Agilidad  ${u.agi}`].join('\n'),{fontSize:'16px',color:'#e9e1ef',lineSpacing:5});
-    const extra=this.add.text(18,178,[`Bendición: ${b.blessing}`,`Energía: ${b.energy}`,`Carisma: ${b.charisma}`,`Voluntad: ${b.will}`,`Sigilo: ${b.stealth}%`, `Percepción: ${b.perception}`,`Orientación: ${u.team==='player'?'Derecha':'Izquierda'}`].join('\n'),{fontSize:'16px',color:'#d1c5dc',lineSpacing:8});
-    c.add([panel,title,close,portrait,stats,extra]);
+    const b=CLASSES[u.type];
+    const c=this.add.container(895,72).setDepth(40); this.statsContainer=c;
+    const panel=this.add.rectangle(0,0,365,520,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);
+    const title=this.add.text(18,18,u.name,{fontSize:'21px',fontStyle:'bold',color:'#fff',wordWrap:{width:280}});
+    const subtitle=this.add.text(18,48,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});
+    const close=this.add.text(326,13,'✕',{fontSize:'27px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});
+    const portrait=this.add.image(77,141,b.portrait).setDisplaySize(112,112);
+    const combat=this.add.text(154,88,[`HP   ${Math.max(0,u.hp)} / ${u.maxHp}`,`MP   ${u.mp} / ${u.maxMp}`,`AP   ${u.ap} / ${u.maxAp}`,`DF   ${u.df}`,`FUE  ${u.str}`,`INT  ${u.int}`,`AGI  ${u.agi}`].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:4});
+    const divider=this.add.rectangle(18,211,329,2,0x786589,.7).setOrigin(0);
+    const blessingLabel=this.add.text(18,228,'Bendición',{fontSize:'15px',color:'#bfb4cb'});
+    const blessingKey={NotPikachu:'notpika',Hojafail:'hojafail',Fotopie:'fotopie','Chimech-o':'chimecho'}[b.blessing];
+    const blessingIcon=this.add.image(72,287,blessingKey).setDisplaySize(86,86);
+    const blessingName=this.add.text(126,266,b.blessing,{fontSize:'19px',fontStyle:'bold',color:'#fff',wordWrap:{width:205}});
+    const extras=this.add.text(18,349,[`Energía: ${b.energy}`,`Carisma: ${b.charisma}`,`Voluntad: ${b.will}`,`Sigilo: ${b.stealth}%`, `Percepción: ${b.perception}`,`Orientación: ${u.team==='player'?'Derecha':'Izquierda'}`].join('     '),{fontSize:'15px',color:'#d1c5dc',wordWrap:{width:325},lineSpacing:10});
+    c.add([panel,title,subtitle,close,portrait,combat,divider,blessingLabel,blessingIcon,blessingName,extras]);
   }
   clearHighlights(){ this.cells.forEach(c=>{c.rect.setFillStyle(c.c<3?0x286946:0x7b303a,.30);}); }
   highlightCell(col,row,color){ const cell=this.cells.find(c=>c.c===col&&c.r===row);cell?.rect.setFillStyle(color,.68); }
