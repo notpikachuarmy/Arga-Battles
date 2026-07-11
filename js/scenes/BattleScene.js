@@ -87,7 +87,7 @@ export class BattleScene extends Phaser.Scene{
     if(action==='attack'){if(this.active.ap<2)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='attack';this.actionInfo.setText('Ataque básico · 2 AP · 1d3 + 1/2 FUE. Pulsa al objetivo frontal.');const t=this.frontTarget(this.active);if(t)this.highlightCell(t.col,t.row,0xff525f);else flashText(this,'No hay objetivo delante.',640,120,0xffbd69);return;}
     const a=this.selectedAbility();if(!a)return flashText(this,'Habilidad no aprendida.',640,120,0xffbd69);if(this.active.ap<a.apCost||this.active.mp<a.mpCost)return flashText(this,'No tienes AP o MP suficiente.',640,120,0xff7777);
     this.action='skill';this.actionInfo.setText(`[${a.rarity}] ${a.name} · ${a.apCost} AP · ${a.mpCost} MP\n${a.description}`);
-    if(a.targetMode==='self'){this.executeAbility(this.active,null,a);return;}
+    if(a.targetMode==='self')this.actionInfo.setText(`[${a.rarity}] ${a.name} · ${a.apCost} AP · ${a.mpCost} MP\n${a.description}\nPulsa sobre la unidad activa para confirmar.`);
     const cells=this.skillCells(this.active,a);cells.forEach(p=>this.highlightCell(p.col,p.row,0x5ba9ff));if(!cells.length)flashText(this,'No hay objetivos válidos.',640,120,0xffbd69);
   }
   onCell(col,row){if(this.battleOver||!this.active||this.active.team!=='player'||this.autoBattle)return;if(this.action==='move'&&this.validMoves(this.active).some(p=>p.col===col&&p.row===row))this.moveUnit(this.active,col,row,()=>{this.active.ap--;this.afterAction();});else if(this.action==='attack'){const t=this.unitAt(col,row);if(t)this.tryAttackTarget(t);}else if(this.action==='skill')this.trySkillCell(col,row);}
@@ -96,6 +96,7 @@ export class BattleScene extends Phaser.Scene{
   basicAttack(attacker,target,done){let damage=Math.max(1,rollDie(3)+Math.floor(attacker.str/2)-Math.floor(target.df/3))+this.bonusDamage(attacker);this.dealDamage(attacker,target,damage,'hit',done);}
   skillCells(u,a){
     const dir=u.team==='player'?1:-1,all=this.cells.map(c=>({col:c.c,row:c.r}));
+    if(a.targetMode==='self')return[{col:u.col,row:u.row}];
     if(a.targetMode==='line'){for(let i=1;i<=a.range;i++){const col=u.col+dir*i;if(col<0||col>=GAME.cols)break;const o=this.unitAt(col,u.row);if(!o)continue;if(o.team===u.team&&!o.isObstacle)continue;return o.team!==u.team?[{col,row:u.row}]:[];}return[];}
     if(a.targetMode==='frontArea'){const col=u.col+dir;return[-1,0,1].map(d=>({col,row:u.row+d})).filter(p=>p.col>=0&&p.col<GAME.cols&&p.row>=0&&p.row<GAME.rows);}
     if(a.targetMode==='frontEmpty'){return this.validMoves(u).filter(p=>Math.abs(p.col-u.col)+Math.abs(p.row-u.row)===1);}
