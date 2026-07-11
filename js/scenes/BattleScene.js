@@ -87,13 +87,27 @@ export class BattleScene extends Phaser.Scene{
     const a=this.selectedAbility();if(!a)return flashText(this,'Esta unidad no conoce ninguna habilidad.',640,120,0xffbd69);if(this.active.ap<a.apCost||this.active.mp<a.mpCost)return flashText(this,'No tienes AP o MP suficiente.',640,120,0xff7777);
     this.action='skill';this.actionInfo.setText(`${a.name} · ${a.apCost} AP · ${a.mpCost} MP · ${a.description}`);
     if(a.targetMode==='self'){this.executeAbility(this.active,null);return;}
-    this.skillCells(this.active,a).forEach(p=>this.highlightCell(p.col,p.row,0x5ba9ff));
+    const cells=this.skillCells(this.active,a);
+    cells.forEach(p=>this.highlightCell(p.col,p.row,0x5ba9ff));
+    if(a.id==='runeLightningSpear'&&!cells.length)flashText(this,'No hay ningún enemigo en línea dentro del alcance.',640,120,0xffbd69);
   }
   onCell(col,row){if(this.battleOver||!this.active||this.active.team!=='player'||this.autoBattle)return;if(this.action==='move'&&this.validMoves(this.active).some(p=>p.col===col&&p.row===row))this.moveUnit(this.active,col,row,()=>{this.active.ap--;this.afterAction();});else if(this.action==='attack'){const t=this.unitAt(col,row);if(t)this.tryAttackTarget(t);}else if(this.action==='skill')this.trySkillCell(col,row);}
   tryAttackTarget(target){if(target!==this.frontTarget(this.active)||target.team===this.active.team)return flashText(this,'Solo puedes atacar al enemigo frontal.',640,120,0xffbd69);this.basicAttack(this.active,target,()=>{this.active.ap-=BALANCE.basicAttackCost;this.afterAction();this.checkEnd();});}
   basicAttack(attacker,target,done){const damage=Math.max(1,rollDie(BALANCE.basicAttackDie)+Math.floor(attacker.str/BALANCE.basicAttackStrengthDivisor)-Math.floor(target.df/3));this.playHit(attacker,target,damage,'hit',done);}
   skillCells(u,a){
-    const dir=u.team==='player'?1:-1;if(a.targetMode==='line'){const out=[];for(let i=1;i<=a.range;i++){const col=u.col+dir*i;if(col<0||col>=GAME.cols)break;out.push({col,row:u.row});if(this.unitAt(col,u.row))break;}return out;}
+    const dir=u.team==='player'?1:-1;
+    if(a.targetMode==='line'){
+      // La lanza atraviesa aliados, pero se detiene en el primer enemigo de la línea.
+      for(let i=1;i<=a.range;i++){
+        const col=u.col+dir*i;
+        if(col<0||col>=GAME.cols)break;
+        const occupant=this.unitAt(col,u.row);
+        if(!occupant)continue;
+        if(occupant.team===u.team)continue;
+        return[{col,row:u.row}];
+      }
+      return[];
+    }
     if(a.targetMode==='frontArea'){const col=u.col+dir;return[-1,0,1].map(d=>({col,row:u.row+d})).filter(p=>p.col>=0&&p.col<GAME.cols&&p.row>=0&&p.row<GAME.rows);}
     return[];
   }

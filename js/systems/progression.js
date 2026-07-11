@@ -8,22 +8,23 @@ export function soldierCost(recruit){ return recruit.level; }
 
 export function calculateStats(type, level){
   const b=CLASSES[type];
-  const steps=Math.floor((level-1)/2);
-  const constitution=b.constitution+steps;
-  const energy=b.energy+steps;
+  const progress=Math.max(0,Math.min(1,(level-1)/(GAME.maxLevel-1)));
+  const grow=(stat)=>b[stat]+Math.floor((b.growth?.[stat]??0)*progress);
+  const constitution=grow('constitution');
+  const energy=grow('energy');
   return {
     maxHp: constitution*5,
     maxMp: energy*5,
-    df:b.df+steps,
-    str:b.str+steps,
-    int:b.int+steps,
-    agi:b.agi+Math.floor((level-1)/3),
+    df:grow('df'),
+    str:grow('str'),
+    int:grow('int'),
+    agi:grow('agi'),
     constitution,
     energy,
-    charisma:b.charisma+Math.floor((level-1)/3),
-    will:b.will+Math.floor((level-1)/3),
-    stealth:Math.min(50,b.stealth+Math.floor((level-1)/2)),
-    perception:b.perception+Math.floor((level-1)/3)
+    charisma:grow('charisma'),
+    will:grow('will'),
+    stealth:Math.min(50,grow('stealth')),
+    perception:grow('perception')
   };
 }
 

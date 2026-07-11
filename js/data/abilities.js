@@ -2,7 +2,7 @@ export const ABILITIES = {
   runeLightningSpear: {
     id: 'runeLightningSpear', classId: 'rune', name: 'Runa de Lanza del Rayo',
     icon: 'runeLightning', apCost: 2, mpCost: 5, range: 3, rarity: 'N', targetMode: 'line',
-    description: 'Proyectil frontal de hasta 3 casillas. Inflige 1d5 + 1/3 de INT y tiene 5% de paralizar.'
+    description: 'Proyectil frontal de hasta 3 casillas. Atraviesa aliados y golpea únicamente al primer enemigo de la línea. Inflige 1d5 + 1/3 de INT y tiene 5% de paralizar.'
   },
   liquidArm: {
     id: 'liquidArm', classId: 'formless', name: 'Brazo Líquido',
