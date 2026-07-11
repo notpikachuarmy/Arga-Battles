@@ -7,15 +7,53 @@ const GRID_X = 352;
 const GRID_Y = 194;
 
 const CLASSES = {
-  rune: { name: 'Trazador de Runas', texture: 'rune', portrait: 'runePortrait', blessing: 'Hojafail', hp: 65, mp: 50, df: 4, str: 7, int: 12, agi: 9, energy: 10, charisma: 9, will: 9, stealth: 6, perception: 9 },
-  formless: { name: 'Sin Forma', texture: 'formless', portrait: 'formlessPortrait', blessing: 'Fotopie', hp: 75, mp: 35, df: 7, str: 8, int: 7, agi: 12, energy: 7, charisma: 7, will: 8, stealth: 15, perception: 10 },
-  demon: { name: 'Sangre Demoníaca', texture: 'demon', portrait: 'demonPortrait', blessing: 'Chimech-o', hp: 80, mp: 40, df: 5, str: 12, int: 9, agi: 7, energy: 8, charisma: 6, will: 11, stealth: 5, perception: 7 }
+  rune: { name: 'Trazador de Runas', texture: 'rune', portrait: 'runePortrait', blessing: 'Hojafail', constitution: 6, energy: 6, mpBonus: 5, df: 2, str: 4, int: 7, agi: 6, charisma: 6, will: 6, stealth: 5, perception: 6 },
+  formless: { name: 'Sin Forma', texture: 'formless', portrait: 'formlessPortrait', blessing: 'Fotopie', constitution: 8, energy: 4, mpBonus: 5, df: 4, str: 5, int: 4, agi: 8, charisma: 5, will: 6, stealth: 12, perception: 7 },
+  demon: { name: 'Sangre Demoníaca', texture: 'demon', portrait: 'demonPortrait', blessing: 'Chimech-o', constitution: 9, energy: 5, mpBonus: 5, df: 3, str: 7, int: 5, agi: 5, charisma: 4, will: 7, stealth: 4, perception: 5 }
 };
 
-const SAVE = { round: 1, soldierPoints: 6, playerRoster: [] };
+const SAVE = { round: 1, soldierPoints: 6, playerRoster: [], nextRecruitId: 1 };
 const CLASS_KEYS = Object.keys(CLASSES);
 const randomClass = () => Phaser.Utils.Array.GetRandom(CLASS_KEYS);
-const randomTeam = () => [randomClass(), randomClass(), randomClass()];
+const createRecruit = (type=randomClass()) => ({ id: SAVE.nextRecruitId++, type, level: 1, xp: 0 });
+const randomTeam = () => [createRecruit(), createRecruit(), createRecruit()];
+const xpNeeded = level => 50 + (level - 1) * 35;
+
+function calculateStats(type, level){
+  const b=CLASSES[type];
+  return {
+    maxHp: b.constitution * 5 + level * 5,
+    maxMp: b.energy * 5 + b.mpBonus + (level - 1) * 2,
+    df: b.df + Math.floor((level - 1) / 2),
+    str: b.str + (level - 1),
+    int: b.int + (level - 1),
+    agi: b.agi + Math.floor((level - 1) / 2),
+    constitution: b.constitution + Math.floor((level - 1) / 2),
+    energy: b.energy + Math.floor((level - 1) / 3),
+    charisma: b.charisma + Math.floor((level - 1) / 3),
+    will: b.will + Math.floor((level - 1) / 3),
+    stealth: Math.min(50, b.stealth + (level - 1)),
+    perception: b.perception + Math.floor((level - 1) / 2)
+  };
+}
+
+function awardGlobalXp(amount){
+  const levelUps=[];
+  SAVE.playerRoster.forEach(recruit=>{
+    if(recruit.level>=10)return;
+    recruit.xp+=amount;
+    let gained=0;
+    while(recruit.level<10 && recruit.xp>=xpNeeded(recruit.level)){
+      recruit.xp-=xpNeeded(recruit.level);
+      recruit.level++;
+      gained++;
+    }
+    if(recruit.level>=10)recruit.xp=0;
+    if(gained)levelUps.push({name:CLASSES[recruit.type].name,levels:gained,newLevel:recruit.level});
+  });
+  return levelUps;
+}
+
 
 class BootScene extends Phaser.Scene {
   constructor(){ super('Boot'); }
@@ -60,6 +98,7 @@ class MenuScene extends Phaser.Scene {
     makeButton(this,W/2,420,330,72,'COMENZAR RUN',()=>{
       SAVE.round=1;
       SAVE.soldierPoints=6;
+      SAVE.nextRecruitId=1;
       SAVE.playerRoster=randomTeam();
       this.scene.start('Placement');
     });
@@ -87,7 +126,7 @@ class PlacementScene extends Phaser.Scene {
     this.add.text(GRID_X+TILE*4.5,GRID_Y-25,'ENEMIGO',{fontSize:'17px',color:'#ff9ba5'}).setOrigin(.5);
 
     if(!SAVE.playerRoster.length) SAVE.playerRoster=randomTeam();
-    this.roster=SAVE.playerRoster.map((type,i)=>({type,slot:i,row:null,col:null,sprite:null}));
+    this.roster=SAVE.playerRoster.slice(0,3).map((recruit,i)=>({recruit,type:recruit.type,slot:i,row:null,col:null,sprite:null}));
     this.selected=0;
     this.cards=[];
     this.roster.forEach((u,i)=>this.createRosterCard(u,i,60,185+i*142));
@@ -100,7 +139,7 @@ class PlacementScene extends Phaser.Scene {
   createRosterCard(unit,index,x,y){
     const bg=this.add.rectangle(x+118,y,236,118,0x171122,.90).setStrokeStyle(3,0x75618c).setInteractive({useHandCursor:true});
     const portrait=this.add.image(x+52,y,CLASSES[unit.type].portrait).setDisplaySize(90,90);
-    const title=this.add.text(x+108,y-30,CLASSES[unit.type].name,{fontSize:'17px',fontStyle:'bold',color:'#fff',wordWrap:{width:124}});
+    const title=this.add.text(x+108,y-36,`${CLASSES[unit.type].name} · Nv. ${unit.recruit.level}`,{fontSize:'16px',fontStyle:'bold',color:'#fff',wordWrap:{width:124}});
     const state=this.add.text(x+108,y+24,'Sin colocar',{fontSize:'15px',color:'#d8ccdf'});
     bg.on('pointerdown',()=>{this.selected=index;this.refreshCards();}); portrait.setInteractive({useHandCursor:true}).on('pointerdown',()=>{this.selected=index;this.refreshCards();});
     this.cards.push({bg,state});
@@ -125,13 +164,13 @@ class PlacementScene extends Phaser.Scene {
       {col:4,row:0},{col:4,row:1},{col:4,row:2},
       {col:5,row:0},{col:5,row:1},{col:5,row:2}
     ]).slice(0,3);
-    this.enemyPositions=this.enemyTeam.map((type,i)=>({type,...slots[i]}));
+    this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,level:1,...slots[i]}));
     this.enemyPositions.forEach(p=>this.add.image(GRID_X+p.col*TILE+TILE/2,GRID_Y+p.row*TILE+TILE/2,p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
   }
   startBattle(){
     if(!this.roster.every(q=>q.col!==null)){ flashText(this,'Debes colocar las tres unidades.',W/2,620,0xffbd69); return; }
     this.scene.start('Battle',{
-      positions:this.roster.map(u=>({type:u.type,col:u.col,row:u.row})),
+      positions:this.roster.map(u=>({type:u.type,recruitId:u.recruit.id,level:u.recruit.level,col:u.col,row:u.row})),
       enemyPositions:this.enemyPositions
     });
   }
@@ -153,19 +192,19 @@ class BattleScene extends Phaser.Scene {
       this.cells.push({c,r,x,y,rect});
     }
     this.units=[]; this.nextId=1;
-    this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row));
+    this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId));
     const difficulty=Math.min(5,Math.floor((SAVE.round-1)/2));
-    const enemies=this.enemyPositions.length?this.enemyPositions:randomTeam().map((type,i)=>({type,col:4,row:i}));
-    enemies.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,difficulty));
+    const enemies=this.enemyPositions.length?this.enemyPositions:randomTeam().map((recruit,i)=>({type:recruit.type,level:1,col:4,row:i}));
+    enemies.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,(p.level||1)+difficulty)));
     this.units.forEach(u=>this.drawUnit(u));
 
     this.action='none'; this.active=null; this.turnQueue=[]; this.queueIndex=0; this.battleOver=false;
     this.createHud(); this.buildTurnQueue(); this.beginTurn();
   }
-  spawnUnit(type,team,col,row,levelBonus=0){
-    const b=CLASSES[type], level=team==='enemy'?Math.min(10,1+levelBonus):1;
-    const maxHp=b.hp+(level-1)*8; const maxMp=b.mp+(level-1)*3;
-    const unit={id:this.nextId++,type,team,col,row,level,name:b.name,maxHp,hp:maxHp,maxMp,mp:maxMp,df:b.df+(level-1),str:b.str+(level-1),int:b.int+(level-1),agi:b.agi+(team==='enemy'?levelBonus:0),ap:3,maxAp:3,alive:true,sprite:null,hpBar:null,status:[],acted:false};
+  spawnUnit(type,team,col,row,level=1,recruitId=null){
+    const b=CLASSES[type];
+    const stats=calculateStats(type,level);
+    const unit={id:this.nextId++,recruitId,type,team,col,row,level,name:b.name,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:3,maxAp:3,alive:true,sprite:null,hpBar:null,status:[],acted:false};
     this.units.push(unit); return unit;
   }
   drawUnit(u){
@@ -379,13 +418,14 @@ class BattleScene extends Phaser.Scene {
 
     const divider2=this.add.rectangle(20,421,390,2,0x786589,.7).setOrigin(0);
     const leftStats=this.add.text(20,448,[
-      `Energía: ${b.energy}`,
-      `Voluntad: ${b.will}`,
-      `Percepción: ${b.perception}`
+      `Constitución: ${u.constitution}`,
+      `Energía: ${u.energy}`,
+      `Voluntad: ${u.will}`,
+      `Percepción: ${u.perception}`
     ].join('\n'),{fontSize:'16px',color:'#d1c5dc',lineSpacing:13});
     const rightStats=this.add.text(220,448,[
-      `Carisma: ${b.charisma}`,
-      `Sigilo: ${b.stealth}%`,
+      `Carisma: ${u.charisma}`,
+      `Sigilo: ${u.stealth}%`,
       `Orientación:`,
       `${u.team==='player'?'Derecha':'Izquierda'}`
     ].join('\n'),{fontSize:'16px',color:'#d1c5dc',lineSpacing:13});
@@ -410,8 +450,11 @@ class BattleScene extends Phaser.Scene {
     const panel=this.add.rectangle(W/2,H/2,600,360,0x171020,.98).setStrokeStyle(4,0x66e38e).setDepth(51);
     this.add.text(W/2,245,'¡VICTORIA!',{fontSize:'48px',fontStyle:'bold',color:'#79ee9c',stroke:'#14251a',strokeThickness:6}).setOrigin(.5).setDepth(52);
     this.add.text(W/2,323,`Ronda ${SAVE.round} superada`,{fontSize:'24px',color:'#fff'}).setOrigin(.5).setDepth(52);
-    this.add.text(W/2,365,'Recompensa provisional: +1 Punto de Soldado\nLa siguiente ronda tendrá enemigos más fuertes.',{fontSize:'19px',color:'#ddd4e5',align:'center',lineSpacing:10}).setOrigin(.5).setDepth(52);
-    const btn=makeButton(this,W/2,464,300,64,'SIGUIENTE RONDA',()=>{SAVE.round++;SAVE.soldierPoints++;this.scene.start('Placement');});btn.setDepth(52);
+    const xpReward=50+SAVE.round*10;
+    const levelUps=awardGlobalXp(xpReward);
+    const levelText=levelUps.length ? `\nSubidas: ${levelUps.map(x=>`${x.name} → Nv. ${x.newLevel}`).join(' · ')}` : '';
+    this.add.text(W/2,365,`Recompensa: +1 Punto de Soldado y +${xpReward} XP global${levelText}\nToda la plantilla recibe XP, también las unidades del banquillo.`,{fontSize:'18px',color:'#ddd4e5',align:'center',lineSpacing:9,wordWrap:{width:530}}).setOrigin(.5).setDepth(52);
+    const btn=makeButton(this,W/2,474,300,64,'SIGUIENTE RONDA',()=>{SAVE.round++;SAVE.soldierPoints++;this.scene.start('Placement');});btn.setDepth(52);
   }
   showDefeat(){
     this.add.rectangle(W/2,H/2,W,H,0x07040b,.82).setDepth(50);
