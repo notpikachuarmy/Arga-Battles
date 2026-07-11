@@ -1,6 +1,6 @@
 import { GAME } from '../config.js';
 import { CLASSES, CLASS_KEYS } from '../data/classes.js';
-import { ABILITIES, CLASS_ABILITY_POOLS } from '../data/abilities.js';
+import { ABILITIES } from '../data/abilities.js';
 import { BLESSINGS, BLESSING_KEYS } from '../data/blessings.js';
 import { calculateStats } from '../systems/progression.js';
 import { makeButton } from '../utils/helpers.js';
@@ -96,7 +96,7 @@ export class EncyclopediaScene extends Phaser.Scene {
     const cls=CLASSES[type],lvl1=calculateStats(type,1),lvl10=calculateStats(type,10);
     const panel=this.add.rectangle(0,0,970,590,0x120c1b,.97).setOrigin(0).setStrokeStyle(3,0x806996);
     const portrait=this.add.image(125,145,cls.portrait).setDisplaySize(190,190);
-    const title=this.add.text(245,22,cls.name,{fontSize:'30px',fontStyle:'bold',color:'#fff'});
+    const title=this.add.text(245,22,`${cls.name} · ${cls.rarity}`,{fontSize:'30px',fontStyle:'bold',color:'#fff'});
     const identity=this.add.text(245,57,cls.identity,{fontSize:'14px',color:'#ffe69a',wordWrap:{width:680}});
     const blessing=BLESSINGS[cls.defaultBlessing];
     const blessingIcon=this.add.image(275,112,blessing.texture).setDisplaySize(54,54);
@@ -106,7 +106,7 @@ export class EncyclopediaScene extends Phaser.Scene {
     const abilitiesTitle=this.add.text(30,385,'HABILIDADES DE CLASE',{fontSize:'21px',fontStyle:'bold',color:'#ffe69a'});
     this.content.add([panel,portrait,title,identity,blessingIcon,blessingText,one,ten,abilitiesTitle]);
 
-    const pool=CLASS_ABILITY_POOLS[type]??[];
+    const pool=cls.abilityPool??[];
     pool.forEach((id,i)=>{
       const a=ABILITIES[id],y=425+i*145;
       const icon=this.add.image(80,y+50,a.icon).setDisplaySize(88,88);

@@ -1,6 +1,7 @@
 export const CLASSES = {
   rune: {
-    name: 'Trazador de Runas', texture: 'rune', portrait: 'runePortrait', defaultBlessing: 'Hojafail',
+    name: 'Trazador de Runas', rarity: 'N', texture: 'rune', portrait: 'runePortrait', defaultBlessing: 'Hojafail',
+    abilityPool: ['runeLightningSpear'],
     constitution: 1, energy: 3, df: 1, str: 1, int: 3, agi: 2,
     charisma: 2, will: 2, stealth: 1, perception: 2,
     growth: {
@@ -10,7 +11,8 @@ export const CLASSES = {
     identity: 'Especialista mágico y de control. Termina con mucha Inteligencia, Energía, Carisma y Percepción.'
   },
   formless: {
-    name: 'Sin Forma', texture: 'formless', portrait: 'formlessPortrait', defaultBlessing: 'Fotopie',
+    name: 'Sin Forma', rarity: 'N', texture: 'formless', portrait: 'formlessPortrait', defaultBlessing: 'Fotopie',
+    abilityPool: ['liquidArm'],
     constitution: 2, energy: 2, df: 3, str: 2, int: 1, agi: 3,
     charisma: 2, will: 2, stealth: 3, perception: 2,
     growth: {
@@ -20,7 +22,8 @@ export const CLASSES = {
     identity: 'Especialista en movilidad, posicionamiento y supervivencia. Termina con mucha Agilidad, Defensa y Sigilo.'
   },
   demon: {
-    name: 'Sangre Demoníaca', texture: 'demon', portrait: 'demonPortrait', defaultBlessing: 'Chimech-o',
+    name: 'Sangre Demoníaca', rarity: 'N', texture: 'demon', portrait: 'demonPortrait', defaultBlessing: 'Chimech-o',
+    abilityPool: ['devilBloodThorns'],
     constitution: 3, energy: 2, df: 2, str: 3, int: 2, agi: 1,
     charisma: 1, will: 3, stealth: 1, perception: 1,
     growth: {

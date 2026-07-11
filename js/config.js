@@ -16,10 +16,17 @@ export const BALANCE = {
   basicAttackCost: 2,
   basicAttackDie: 3,
   basicAttackStrengthDivisor: 2,
+
   startingSoldierPoints: 6,
-  victorySoldierPoints: 1,
-  xpBase: 50,
-  xpPerRound: 10,
+  maxSoldierPoints: 30,
+  soldierPointsReward: 2,
+  rewardEveryRounds: 2,
+
+  xpBase: 25,
+  xpPerRound: 5,
+  xpNeededBase: 100,
+  xpNeededPerLevel: 50,
+
   mpRegenEveryTurns: 3,
   mpRegenPercent: 0.20
 };

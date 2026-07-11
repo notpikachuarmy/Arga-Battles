@@ -1,9 +1,11 @@
-import { GAME } from '../config.js';
+import { GAME, BALANCE } from '../config.js';
 import { CLASSES } from '../data/classes.js';
-import { CLASS_ABILITY_POOLS } from '../data/abilities.js';
 import { SAVE } from '../data/save.js';
 
-export function xpNeeded(level){ return 50 + (level - 1) * 35; }
+export function xpNeeded(level){
+  return BALANCE.xpNeededBase + (level - 1) * BALANCE.xpNeededPerLevel;
+}
+
 export function soldierCost(recruit){ return recruit.level; }
 
 export function calculateStats(type, level){
@@ -15,16 +17,10 @@ export function calculateStats(type, level){
   return {
     maxHp: constitution*5,
     maxMp: energy*5,
-    df:grow('df'),
-    str:grow('str'),
-    int:grow('int'),
-    agi:grow('agi'),
-    constitution,
-    energy,
-    charisma:grow('charisma'),
-    will:grow('will'),
-    stealth:Math.min(50,grow('stealth')),
-    perception:grow('perception')
+    df:grow('df'), str:grow('str'), int:grow('int'), agi:grow('agi'),
+    constitution, energy,
+    charisma:grow('charisma'), will:grow('will'),
+    stealth:Math.min(50,grow('stealth')), perception:grow('perception')
   };
 }
 
@@ -36,7 +32,7 @@ export function earlyEnemyScaling(round){
 }
 
 function learnRandomAvailable(recruit){
-  const pool=CLASS_ABILITY_POOLS[recruit.type]??[];
+  const pool=CLASSES[recruit.type]?.abilityPool??[];
   const available=pool.filter(id=>!recruit.learnedAbilities.includes(id));
   if(!available.length)return null;
   const id=Phaser.Utils.Array.GetRandom(available);
@@ -45,21 +41,32 @@ function learnRandomAvailable(recruit){
 }
 
 export function awardGlobalXp(amount){
-  const levelUps=[];
+  const results=[];
   SAVE.playerRoster.forEach(recruit=>{
-    if(recruit.level>=GAME.maxLevel)return;
-    recruit.xp+=amount;
+    const previousLevel=recruit.level;
     const learned=[];
-    while(recruit.level<GAME.maxLevel&&recruit.xp>=xpNeeded(recruit.level)){
-      recruit.xp-=xpNeeded(recruit.level);
-      recruit.level++;
-      if(GAME.abilityLevels.includes(recruit.level)){
-        const ability=learnRandomAvailable(recruit);
-        if(ability)learned.push(ability);
+    if(recruit.level<GAME.maxLevel){
+      recruit.xp+=amount;
+      while(recruit.level<GAME.maxLevel&&recruit.xp>=xpNeeded(recruit.level)){
+        recruit.xp-=xpNeeded(recruit.level);
+        recruit.level++;
+        if(GAME.abilityLevels.includes(recruit.level)){
+          const ability=learnRandomAvailable(recruit);
+          if(ability)learned.push(ability);
+        }
       }
+      if(recruit.level>=GAME.maxLevel)recruit.xp=0;
     }
-    if(recruit.level>=GAME.maxLevel)recruit.xp=0;
-    if(learned.length||recruit.level>1)levelUps.push({name:CLASSES[recruit.type].name,newLevel:recruit.level,learned});
+    results.push({
+      recruitId:recruit.id,
+      name:CLASSES[recruit.type].name,
+      previousLevel,
+      newLevel:recruit.level,
+      leveled:recruit.level>previousLevel,
+      learned,
+      xp:recruit.xp,
+      xpToNext:recruit.level<GAME.maxLevel?xpNeeded(recruit.level):0
+    });
   });
-  return levelUps;
+  return results;
 }

@@ -166,12 +166,21 @@ export class BattleScene extends Phaser.Scene{
   showVictory(){
     this.add.rectangle(640,360,1280,720,0x07040b,.84).setDepth(50);this.add.rectangle(640,360,680,430,0x171020,.99).setStrokeStyle(4,0x66e38e).setDepth(51);
     this.add.text(640,205,'¡VICTORIA!',{fontSize:'46px',fontStyle:'bold',color:'#79ee9c'}).setOrigin(.5).setDepth(52);
-    const xp=BALANCE.xpBase+SAVE.round*BALANCE.xpPerRound,ups=awardGlobalXp(xp);SAVE.soldierPoints+=BALANCE.victorySoldierPoints;
-    this.add.text(640,270,`Ronda ${SAVE.round} superada`,{fontSize:'23px',fontStyle:'bold',color:'#fff'}).setOrigin(.5).setDepth(52);
-    this.add.text(640,330,`+${BALANCE.victorySoldierPoints} Punto de Soldado     +${xp} XP global`,{fontSize:'20px',color:'#ffe596'}).setOrigin(.5).setDepth(52);
-    const lines=ups.length?ups.map(x=>`${x.name}: nivel ${x.newLevel}`).join('\n'):'Ninguna unidad ha subido de nivel.';
-    this.add.text(640,390,lines,{fontSize:'17px',color:'#ddd4e5',align:'center',lineSpacing:8,wordWrap:{width:560}}).setOrigin(.5).setDepth(52);
-    makeButton(this,640,505,320,66,'SIGUIENTE RONDA',()=>{SAVE.round++;this.scene.start('Placement');}).setDepth(52);
+    const completedRound=SAVE.round;
+    const xp=BALANCE.xpBase+completedRound*BALANCE.xpPerRound;
+    const results=awardGlobalXp(xp);
+    this.add.text(640,270,`Ronda ${completedRound} superada`,{fontSize:'23px',fontStyle:'bold',color:'#fff'}).setOrigin(.5).setDepth(52);
+    this.add.text(640,322,`+${xp} XP global para toda la plantilla`,{fontSize:'20px',color:'#ffe596'}).setOrigin(.5).setDepth(52);
+    const leveled=results.filter(x=>x.leveled);
+    const lines=leveled.length
+      ? leveled.map(x=>`${x.name}: nivel ${x.previousLevel} → ${x.newLevel}`).join('\n')
+      : 'La experiencia se ha guardado. Nadie ha subido de nivel todavía.';
+    this.add.text(640,382,lines,{fontSize:'17px',color:'#ddd4e5',align:'center',lineSpacing:8,wordWrap:{width:560}}).setOrigin(.5).setDepth(52);
+    const rewardDue=completedRound%BALANCE.rewardEveryRounds===0;
+    makeButton(this,640,505,340,66,rewardDue?'VER RECOMPENSA':'SIGUIENTE RONDA',()=>{
+      SAVE.round++;
+      this.scene.start(rewardDue?'Reward':'Placement');
+    }).setDepth(52);
   }
   showDefeat(){this.add.rectangle(640,360,1280,720,0x07040b,.84).setDepth(50);this.add.rectangle(640,360,600,350,0x171020,.98).setStrokeStyle(4,0xe2505d).setDepth(51);this.add.text(640,250,'DERROTA',{fontSize:'48px',fontStyle:'bold',color:'#ff6571'}).setOrigin(.5).setDepth(52);this.add.text(640,335,`Has alcanzado la ronda ${SAVE.round}.\nLa run ha terminado.`,{fontSize:'21px',color:'#eee5f2',align:'center'}).setOrigin(.5).setDepth(52);makeButton(this,640,454,300,64,'VOLVER AL MENÚ',()=>this.scene.start('Menu')).setDepth(52);}
 }
