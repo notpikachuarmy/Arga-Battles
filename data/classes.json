@@ -45,7 +45,8 @@
       "stealth": 3,
       "perception": 6
     },
-    "identity": "Especialista mágico y de control. Termina con mucha Inteligencia, Energía, Carisma y Percepción."
+    "identity": "Especialista mágico y de control. Termina con mucha Inteligencia, Energía, Carisma y Percepción.",
+    "movement": 2
   },
   "formless": {
     "name": "Sin Forma",
@@ -93,7 +94,8 @@
       "stealth": 12,
       "perception": 5
     },
-    "identity": "Especialista en movilidad, posicionamiento, adaptación y supervivencia. Termina con mucha Agilidad, Defensa y Sigilo."
+    "identity": "Especialista en movilidad, posicionamiento, adaptación y supervivencia. Termina con mucha Agilidad, Defensa y Sigilo.",
+    "movement": 2
   },
   "demon": {
     "name": "Sangre Demoníaca",
@@ -141,6 +143,7 @@
       "stealth": 2,
       "perception": 3
     },
-    "identity": "Especialista en daño físico, sacrificio y resistencia. Termina con mucha Fuerza, Constitución y Voluntad."
+    "identity": "Especialista en daño físico, sacrificio y resistencia. Termina con mucha Fuerza, Constitución y Voluntad.",
+    "movement": 2
   }
 }

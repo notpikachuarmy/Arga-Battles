@@ -30,7 +30,8 @@
       "will": 3,
       "stealth": 0,
       "perception": 2
-    }
+    },
+    "movement": 1
   },
   "wall": {
     "id": "wall",
@@ -63,6 +64,7 @@
       "will": 0,
       "stealth": 0,
       "perception": 0
-    }
+    },
+    "movement": 0
   }
 }

@@ -14,8 +14,8 @@ export const GAME = {
 };
 
 export const BALANCE = {
-  moveCost: 1,
-  basicAttackCost: 2,
+  moveCost: 0,
+  basicAttackCost: 1,
   basicAttackDie: 3,
   basicAttackStrengthDivisor: 2,
 

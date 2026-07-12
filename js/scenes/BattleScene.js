@@ -75,7 +75,7 @@ export class BattleScene extends Phaser.Scene{
       if(level>=5&&known.length<2&&available().length)known.push(Phaser.Utils.Array.GetRandom(available()));
       if(level>=10&&known.length<3&&available().length)known.push(Phaser.Utils.Array.GetRandom(available()));
     }
-    const u={id:this.nextId++,recruitId,type,team,col,row,level,name:options.name||cls?.name||enemyDef?.name||SUMMONS[type]?.name||'Unidad',aiProfile:options.aiProfile||enemyDef?.aiProfile||SUMMONS[type]?.aiProfile||(team==='enemy'?({rune:'balanced',formless:'flanker',demon:'aggressive'}[type]||'balanced'):'balanced'),blessing:blessing||cls?.defaultBlessing||null,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:known,buffs:[],paralyzedTurns:0,turnsTaken:0,blessingBonus:0,isSummon:!!options.isSummon,isObstacle:!!options.isObstacle,resurrectionUsed:false,copiedAbility:null,ownerId:options.ownerId??null,persistentSummon:!!options.persistentSummon,cooldowns:{},echoUsed:false,berserkerActive:false,resistances:{...(enemyDef?.resistances||{})},enemyReward:enemyDef?.reward||null,size:enemyDef?.size||1,textureKey:options.texture||enemyDef?.texture||(type==='enemy_zombie'?'zombie':type)};
+    const u={id:this.nextId++,recruitId,type,team,col,row,level,name:options.name||cls?.name||enemyDef?.name||SUMMONS[type]?.name||'Unidad',aiProfile:options.aiProfile||enemyDef?.aiProfile||SUMMONS[type]?.aiProfile||(team==='enemy'?({rune:'balanced',formless:'flanker',demon:'aggressive'}[type]||'balanced'):'balanced'),blessing:blessing||cls?.defaultBlessing||null,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:known,buffs:[],paralyzedTurns:0,turnsTaken:0,blessingBonus:0,isSummon:!!options.isSummon,isObstacle:!!options.isObstacle,resurrectionUsed:false,copiedAbility:null,ownerId:options.ownerId??null,persistentSummon:!!options.persistentSummon,cooldowns:{},echoUsed:false,berserkerActive:false,resistances:{...(enemyDef?.resistances||{})},enemyReward:enemyDef?.reward||null,size:enemyDef?.size||1,movement:Math.max(0,Number(options.movement??enemyDef?.movement??SUMMONS[type]?.movement??cls?.movement??2)),hasMoved:false,textureKey:options.texture||enemyDef?.texture||(type==='enemy_zombie'?'zombie':type)};
     this.units.push(u);return u;
   }
   drawUnit(u){
@@ -110,7 +110,7 @@ export class BattleScene extends Phaser.Scene{
     this.nameText=this.add.text(155,568,'',{fontSize:'20px',fontStyle:'bold',color:'#fff',wordWrap:{width:390}});
     this.resourceText=this.add.text(155,600,'',{fontSize:'16px',color:'#eee6f4'});
     this.actionInfo=this.add.text(155,630,'Selecciona una acción.',{fontSize:'12px',color:'#cfc4d8',wordWrap:{width:415},lineSpacing:2,maxLines:6});
-    this.buttons={move:this.actionButton(640,635,'move','MOVER','1 AP',()=>this.selectAction('move')),attack:this.actionButton(735,635,'attack','ATACAR','2 AP',()=>this.selectAction('attack')),skills:[],end:this.actionButton(1125,635,'end','TERMINAR','Turno',()=>{if(!this.autoBattle)this.endTurn();})};
+    this.buttons={move:this.actionButton(640,635,'move','MOVER','GRATIS',()=>this.selectAction('move')),attack:this.actionButton(735,635,'attack','ATACAR','1 AP',()=>this.selectAction('attack')),skills:[],end:this.actionButton(1125,635,'end','TERMINAR','Turno',()=>{if(!this.autoBattle)this.endTurn();})};
     [830,925,1020].forEach((x,i)=>this.buttons.skills.push(this.actionButton(x,635,'skill',`SKILL ${i+1}`,'Bloqueada',()=>this.selectSkill(i))));
     this.hudObjects=[this.hudBg,this.portrait,this.nameText,this.resourceText,this.actionInfo];Object.values(this.buttons).flatMap(v=>Array.isArray(v)?v:[v]).flat().forEach(b=>{if(b?.bg)this.hudObjects.push(b.bg,b.icon,b.txt,b.ct);});
     this.turnPanel=this.add.container(12,68);this.statsContainer=null;
@@ -122,7 +122,7 @@ export class BattleScene extends Phaser.Scene{
   refreshTurnOrder(){this.turnPanel.removeAll(true);this.turnQueue.filter(u=>u.alive).forEach((u,i)=>{const y=i*62,active=u===this.active;const aura=this.add.circle(48,y+30,active?29:25,u.team==='player'?0x32d46f:0xe34754,active?1:.65);const img=this.add.image(48,y+30,this.textureForUnit(u)).setDisplaySize(active?51:44,active?51:44).setFlipX(u.team==='enemy');const hp=this.add.text(78,y+22,`${Math.max(0,u.hp)}/${u.maxHp}`,{fontSize:'11px',color:'#fff'});this.turnPanel.add([aura,img,hp]);});}
   beginTurn(){
     if(this.battleOver)return;this.clearHighlights();this.action='none';while(this.queueIndex<this.turnQueue.length&&!this.turnQueue[this.queueIndex].alive)this.queueIndex++;if(this.queueIndex>=this.turnQueue.length)this.buildTurnQueue();this.active=this.turnQueue[this.queueIndex];if(!this.active)return;
-    this.active.ap=this.active.maxAp;this.active.turnsTaken++;this.active.usedAbilitiesThisTurn=[];this.abilitiesFor(this.active).forEach(a=>delete a._aiBlocked);this.selectedSkillIndex=0;this.active.damageAtTurnStart=this.damageSerial;
+    this.active.ap=this.active.maxAp;this.active.hasMoved=false;this.active.turnsTaken++;this.active.usedAbilitiesThisTurn=[];this.abilitiesFor(this.active).forEach(a=>delete a._aiBlocked);this.selectedSkillIndex=0;this.active.damageAtTurnStart=this.damageSerial;
     Object.keys(this.active.cooldowns||{}).forEach(id=>{if(this.active.cooldowns[id]>0)this.active.cooldowns[id]--;});
     if(this.active.turnsTaken%BALANCE.mpRegenEveryTurns===0&&this.active.mp<this.active.maxMp){const restored=Math.max(1,Math.ceil(this.active.maxMp*BALANCE.mpRegenPercent)),actual=Math.min(restored,this.active.maxMp-this.active.mp);this.active.mp+=actual;flashText(this,`+${actual} MP`,this.active.sprite.x,this.active.sprite.y-78,0x71bfff);}
     this.applyTurnStartStatuses(this.active);this.updateHud();this.refreshTurnOrder();
@@ -136,14 +136,14 @@ export class BattleScene extends Phaser.Scene{
   selectSkill(index){this.selectedSkillIndex=index;this.selectAction('skill');}
   selectAction(action){
     if(this.battleOver||this.actionLocked||!this.active||this.active.team!=='player'||this.autoBattle)return;this.clearHighlights();
-    if(action==='move'){if(this.active.ap<1)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='move';this.actionInfo.setText(`Movimiento · 1 AP · Alcance ${this.movementRange(this.active)} casillas. Elige una casilla verde.`);this.validMoves(this.active).forEach(p=>this.highlightCell(p.col,p.row,0x50dc84));return;}
-    if(action==='attack'){if(this.active.ap<2)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='attack';this.actionInfo.setText('Ataque básico · 2 AP · 1d3 + 1/2 FUE. Pulsa un enemigo adyacente.');const targets=this.adjacentEnemies(this.active);targets.forEach(t=>this.highlightCell(t.col,t.row,0xff525f));if(!targets.length)flashText(this,'No hay enemigos adyacentes.',640,120,0xffbd69);return;}
+    if(action==='move'){if(this.active.hasMoved)return flashText(this,'Esta unidad ya se ha movido este turno.',640,120,0xffbd69);this.action='move';this.actionInfo.setText(`Movimiento gratuito · Alcance ${this.movementRange(this.active)} casillas · Un uso por turno. Elige una casilla verde.`);this.validMoves(this.active).forEach(p=>this.highlightCell(p.col,p.row,0x50dc84));return;}
+    if(action==='attack'){if(this.active.ap<BALANCE.basicAttackCost)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='attack';this.actionInfo.setText('Ataque básico · 1 AP · 1d3 + 1/2 FUE. Pulsa un enemigo adyacente.');const targets=this.adjacentEnemies(this.active);targets.forEach(t=>this.highlightCell(t.col,t.row,0xff525f));if(!targets.length)flashText(this,'No hay enemigos adyacentes.',640,120,0xffbd69);return;}
     const a=this.selectedAbility();if(!a)return flashText(this,'Habilidad no aprendida.',640,120,0xffbd69);if(this.active.ap<a.apCost||this.active.mp<this.abilityMpCost(this.active,a)||this.abilityCooldown(this.active,a)>0)return flashText(this,'No tienes AP o MP suficiente.',640,120,0xff7777);
     this.action='skill';this.actionInfo.setText(`[${a.rarity}] ${a.name} · ${a.apCost} AP · ${a.mpCost} MP\n${a.description}`);
     if(a.targetMode==='self')this.actionInfo.setText(`[${a.rarity}] ${a.name} · ${a.apCost} AP · ${a.mpCost} MP\n${a.description}\nPulsa sobre la unidad activa para confirmar.`);
     const cells=this.skillCells(this.active,a);cells.forEach(p=>this.highlightCell(p.col,p.row,0x5ba9ff));if(!cells.length)flashText(this,'No hay objetivos válidos.',640,120,0xffbd69);
   }
-  onCell(col,row){if(this.battleOver||this.actionLocked||!this.active||this.active.team!=='player'||this.autoBattle)return;if(this.action==='move'){const move=this.validMoves(this.active).find(p=>p.col===col&&p.row===row);if(move)this.moveUnit(this.active,col,row,()=>{this.active.ap--;this.afterAction();},move.path);}else if(this.action==='attack'){const t=this.unitAt(col,row);if(t)this.tryAttackTarget(t);}else if(this.action==='skill')this.trySkillCell(col,row);}
+  onCell(col,row){if(this.battleOver||this.actionLocked||!this.active||this.active.team!=='player'||this.autoBattle)return;if(this.action==='move'){const move=this.validMoves(this.active).find(p=>p.col===col&&p.row===row);if(move)this.moveUnit(this.active,col,row,()=>{this.active.hasMoved=true;this.afterAction();},move.path);}else if(this.action==='attack'){const t=this.unitAt(col,row);if(t)this.tryAttackTarget(t);}else if(this.action==='skill')this.trySkillCell(col,row);}
   tryAttackTarget(target){if(!this.isAdjacent(this.active,target)||target.team===this.active.team)return flashText(this,'Solo puedes atacar a un enemigo adyacente.',640,120,0xffbd69);this.breakStealth(this.active);this.basicAttack(this.active,target,()=>{this.active.ap-=BALANCE.basicAttackCost;this.afterAction();this.checkEnd();});}
   bonusDamage(u){return u.buffs.some(b=>b.id==='fireDamage')?rollDie(4):0;}
   basicAttack(attacker,target,done){let damage=Math.max(1,rollDie(3)+Math.floor(attacker.str/2)-Math.floor(target.df/3))+this.bonusDamage(attacker);this.dealDamage(attacker,target,damage,'hit',done);}
@@ -196,7 +196,7 @@ export class BattleScene extends Phaser.Scene{
     const fx=this.add.image(target.sprite.x,target.sprite.y,texture).setDisplaySize(110,110).setAlpha(.95);
     this.tweens.add({targets:fx,alpha:0,scale:1.4,duration:300,onComplete:()=>fx.destroy()});
   }
-  movementRange(u){return Phaser.Math.Clamp(2+Math.floor(Math.max(0,u.agi)/3),2,7);}
+  movementRange(u){return Math.max(0,Math.floor(Number(u?.movement??2)));}
   validMoves(u){
     if(u.buffs?.some(b=>b.id==='immobilized'))return[];
     const max=this.movementRange(u),key=(c,r)=>`${c},${r}`,queue=[{col:u.col,row:u.row,d:0,path:[]}],seen=new Set([key(u.col,u.row)]),out=[];
@@ -233,7 +233,7 @@ export class BattleScene extends Phaser.Scene{
     u.buffs=u.buffs.filter(b=>b.remaining>0);
   }
   toggleAutoBattle(){if(this.battleOver)return;this.autoBattle=!this.autoBattle;this.autoLabel.setText(`AUTO-BATTLE: ${this.autoBattle?'SÍ':'NO'}`);this.autoButton.setFillStyle(this.autoBattle?0x285f3c:0x241a31,.96);if(this.autoBattle&&this.active?.team==='player')this.time.delayedCall(150,()=>this.runAIControlled(this.active));}
-  runAIControlled(u){if(!u?.alive||this.battleOver||u!==this.active)return;const enemyTeam=u.team==='player'?'enemy':'player';let safety=0;const loop=()=>{if(this.battleOver||u!==this.active||!u.alive)return;if(u.ap<=0||safety++>8)return this.endTurn();const front=this.frontTarget(u);if(front&&front.team===enemyTeam&&u.ap>=2){const estimate=Math.max(1,2+Math.floor(u.str/2)-Math.floor(front.df/3));if(front.hp<=estimate||!this.bestAbilityAction(u,enemyTeam))return this.basicAttack(u,front,()=>{u.ap-=2;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});}
+  runAIControlled(u){if(!u?.alive||this.battleOver||u!==this.active)return;const enemyTeam=u.team==='player'?'enemy':'player';let safety=0;const loop=()=>{if(this.battleOver||u!==this.active||!u.alive)return;if(u.ap<=0||safety++>8)return this.endTurn();const front=this.frontTarget(u);if(front&&front.team===enemyTeam&&u.ap>=BALANCE.basicAttackCost){const estimate=Math.max(1,2+Math.floor(u.str/2)-Math.floor(front.df/3));if(front.hp<=estimate||!this.bestAbilityAction(u,enemyTeam))return this.basicAttack(u,front,()=>{u.ap-=BALANCE.basicAttackCost;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});}
       const action=this.bestAbilityAction(u,enemyTeam);if(action){
         this.selectedSkillIndex=this.abilitiesFor(u).findIndex(a=>a.id===action.ability.id);
         try{
@@ -249,8 +249,8 @@ export class BattleScene extends Phaser.Scene{
         }
         return this.time.delayedCall(180,loop);
       }
-      if(front&&front.team===enemyTeam&&u.ap>=2)return this.basicAttack(u,front,()=>{u.ap-=2;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});
-      const move=chooseMove(this,u,enemyTeam);if(u.ap>=1&&move&&move.score>0)return this.moveUnit(u,move.col,move.row,()=>{u.ap--;this.log.add('ai_move',`${u.name} se mueve`,{unit:u.id,profile:u.aiProfile,to:{col:move.col,row:move.row},score:move.score});this.updateHud();this.time.delayedCall(150,loop);},move.path);this.endTurn();};loop();}
+      if(front&&front.team===enemyTeam&&u.ap>=BALANCE.basicAttackCost)return this.basicAttack(u,front,()=>{u.ap-=BALANCE.basicAttackCost;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});
+      const move=u.hasMoved?null:chooseMove(this,u,enemyTeam);if(move&&move.score>0)return this.moveUnit(u,move.col,move.row,()=>{u.hasMoved=true;this.log.add('ai_move',`${u.name} se mueve`,{unit:u.id,profile:u.aiProfile,to:{col:move.col,row:move.row},score:move.score});this.updateHud();this.time.delayedCall(150,loop);},move.path);this.endTurn();};loop();}
   bestAbilityAction(u,enemyTeam){return chooseAbilityAction(this,u,enemyTeam);}
   aiUseAbility(){return false;}
   setHudVisible(visible){this.hudObjects?.forEach(o=>o.setVisible(visible));}
@@ -262,8 +262,8 @@ export class BattleScene extends Phaser.Scene{
     const can=this.active?.team==='player'&&!this.autoBattle;
     [this.buttons.move,this.buttons.attack,this.buttons.end,...this.buttons.skills].forEach(b=>{b.bg.setAlpha(can?1:.35);b.icon.setAlpha(can?1:.35);b.icon.clearTint();});
     if(!can)return;
-    if(this.active.ap<1)this.buttons.move.icon.setTint(0xff5555);
-    if(this.active.ap<2)this.buttons.attack.icon.setTint(0xff5555);
+    if(this.active.hasMoved||this.movementRange(this.active)<=0)this.buttons.move.icon.setTint(0x777777);
+    if(this.active.ap<BALANCE.basicAttackCost)this.buttons.attack.icon.setTint(0xff5555);
     const arr=this.abilitiesFor(this.active);
     this.buttons.skills.forEach((b,i)=>{const a=arr[i];if(!a)b.icon.setTint(0x222222);else if(this.active.ap<a.apCost||this.active.mp<this.abilityMpCost(this.active,a))b.icon.setTint(0xff5555);else if(this.abilityCooldown(this.active,a)>0)b.icon.setTint(0x5599ff);});
   }
