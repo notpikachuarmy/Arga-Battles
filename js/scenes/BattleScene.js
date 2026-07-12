@@ -13,6 +13,8 @@ import { executeAbilityEffect } from '../systems/abilityEffects.js';
 import { bestAbilityAction as chooseAbilityAction, bestMove as chooseMove } from '../systems/aiController.js';
 import { calculateDifficulty } from '../systems/difficulty.js';
 
+const STALEMATE_TURN_LIMIT=15;
+
 const STATUS_TEXTURES={
   paralyzed:'paralyzed',bloodThorns:'strengthUp',fireDamage:'fireDamageUp',adaptiveResistance:'adaptiveResistanceStatus',wateryDodge:'wateryDodgeStatus',miniaturized:'miniaturized',maximized:'maximized',transformed:'transformed',stealth:'stealth',poison:'poisoned',bloodThirst:'bloodThirstStatus',crimsonPact:'crimsonPactStatus',lifesteal:'lifesteal'
 };
@@ -216,19 +218,19 @@ export class BattleScene extends Phaser.Scene{
 
   checkBerserker(u){if(!u?.alive||u.berserkerActive||u.hp/u.maxHp>.25||!this.teamHasRelic(u.team,'berserkerSoul'))return;u.berserkerActive=true;u.str+=3;u.agi+=2;flashText(this,'¡Alma Berserker!',u.sprite.x,u.sprite.y-82,0xff8a62);}
   handleStalemateTurn(){
-    // El contador es global: cualquier daño causado por cualquier unidad corta
-    // inmediatamente la racha de turnos sin daño.
+    // Se cuentan turnos completos de unidades, no acciones ni movimientos.
+    // Cualquier daño real, causado o recibido por cualquier equipo, reinicia la racha.
     if(this.damageSerial!==this.lastStalemateDamageSerial){
       this.lastStalemateDamageSerial=this.damageSerial;
       this.noDamageTurns=0;
       return;
     }
     this.noDamageTurns++;
-    if(this.noDamageTurns<5)return;
+    if(this.noDamageTurns<STALEMATE_TURN_LIMIT)return;
     this.noDamageTurns=0;
     this.stalemateResets++;
     if(this.stalemateResets<=2){
-      flashText(this,`Reposicionamiento anti-bloqueo ${this.stalemateResets}/2`,640,125,0xffdf76);
+      flashText(this,`Reposicionamiento anti-bloqueo ${this.stalemateResets}/2 tras ${STALEMATE_TURN_LIMIT} turnos sin daño`,640,125,0xffdf76);
       this.repositionTeams();
       return;
     }

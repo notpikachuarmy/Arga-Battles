@@ -18,6 +18,7 @@ export class MapScene extends Phaser.Scene{
 
   create(){
     if(!SAVE.generatedMap)SAVE.generatedMap=generateMap(SAVE.mapNumber,SAVE.seed);
+    if(this.repairSingletonConnections(SAVE.generatedMap))saveRun();
     this.selectedNodeId=null;
     this.nodeIcons=new Map();
 
@@ -37,6 +38,25 @@ export class MapScene extends Phaser.Scene{
     this.createHud();
     this.configureScrolling();
     this.centerCameraOnProgress();
+  }
+
+
+  repairSingletonConnections(map){
+    if(!map?.nodes?.length)return false;
+    let changed=false;
+    for(let row=0;row<(map.rows||15)-1;row++){
+      const current=map.nodes.filter(node=>node.row===row);
+      const next=map.nodes.filter(node=>node.row===row+1);
+      if(next.length!==1)continue;
+      const targetId=next[0].id;
+      current.forEach(node=>{
+        if(node.links.length!==1||node.links[0]!==targetId){
+          node.links=[targetId];
+          changed=true;
+        }
+      });
+    }
+    return changed;
   }
 
   createHud(){
@@ -114,10 +134,12 @@ export class MapScene extends Phaser.Scene{
     const steps=Math.max(2,Math.floor(d/spacing));
     for(let i=1;i<steps;i++){
       const t=i/steps;
-      this.add.image(a.x+dx*t,a.y+dy*t,active?'mapPathActive':'mapPath')
-        .setDisplaySize(active?9:7,active?9:7)
-        .setAlpha(active?.92:available?.58:.28)
+      const dot=this.add.image(a.x+dx*t,a.y+dy*t,active?'mapPathActive':'mapPath')
+        .setDisplaySize(active?10:8,active?10:8)
+        .setAlpha(active?1:available?.95:.78)
         .setDepth(-2);
+      // El sprite normal es oscuro; el tinte garantiza contraste en cualquier zona del fondo.
+      if(!active)dot.setTint(available?0xffe596:0xd8c9e4);
     }
   }
 

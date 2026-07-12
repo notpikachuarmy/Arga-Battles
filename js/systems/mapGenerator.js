@@ -44,10 +44,18 @@ export function generateExpeditionMap(mapNumber=1,seed=1){
 
   for(let row=0;row<MAP_ROWS-1;row++){
     const current=byRow[row],next=byRow[row+1];
+
+    // Cuando el siguiente nivel solo tiene un nodo, todas las rutas del nivel
+    // anterior convergen en él. Así ninguna elección previa puede quedar cortada.
+    if(next.length===1){
+      current.forEach(node=>{node.links=[next[0].id];});
+      continue;
+    }
+
     current.forEach(node=>{
       const ordered=[...next].sort((a,b)=>Math.abs(a.col-node.col)-Math.abs(b.col-node.col));
       node.links=[ordered[0].id];
-      if(next.length>1&&rand()<.42)node.links.push(ordered[1].id);
+      if(rand()<.42)node.links.push(ordered[1].id);
     });
     next.forEach(target=>{
       if(!current.some(source=>source.links.includes(target.id))){
