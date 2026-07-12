@@ -31,7 +31,7 @@ export class BattleScene extends Phaser.Scene{
       const rect=this.add.rectangle(x,y,T-4,T-4,c<3?0x286946:0x7b303a,.30).setStrokeStyle(2,c===2||c===3?0xd6bbef:0xbdaecd,.67).setInteractive({useHandCursor:true}).on('pointerdown',()=>this.onCell(c,r));
       this.cells.push({c,r,x,y,rect});
     }
-    this.units=[];this.nextId=1;this.log=new GameLog(`battle-round-${SAVE.round}`);globalThis.ARGA_DEBUG={...(globalThis.ARGA_DEBUG||{}),battleLog:this.log};this.log.add('battle_start','Comienza el combate',{round:SAVE.round,players:this.startPositions,enemies:this.enemyPositions,enemyRelics:this.enemyRelics});this.lastAbilityByTeam={player:null,enemy:null};this.damageSerial=0;this.lastTurnDamageSerial=0;this.noDamageTurns=0;this.stalemateResets=0;
+    this.units=[];this.nextId=1;this.log=new GameLog(`battle-round-${SAVE.round}`);globalThis.ARGA_DEBUG={...(globalThis.ARGA_DEBUG||{}),battleLog:this.log};this.log.add('battle_start','Comienza el combate',{round:SAVE.round,players:this.startPositions,enemies:this.enemyPositions,enemyRelics:this.enemyRelics});this.lastAbilityByTeam={player:null,enemy:null};this.damageSerial=0;this.lastStalemateDamageSerial=0;this.noDamageTurns=0;this.stalemateResets=0;
     this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities,p.blessing,{name:p.name}));
     const node=SAVE.generatedMap?.nodes?.find(n=>n.id===SAVE.pendingNodeId);
     const difficulty=calculateDifficulty(SAVE,node),baseScale=earlyEnemyScaling(SAVE.round),extra=Math.max(0,difficulty.score-1);
@@ -215,7 +215,33 @@ export class BattleScene extends Phaser.Scene{
   }
 
   checkBerserker(u){if(!u?.alive||u.berserkerActive||u.hp/u.maxHp>.25||!this.teamHasRelic(u.team,'berserkerSoul'))return;u.berserkerActive=true;u.str+=3;u.agi+=2;flashText(this,'¡Alma Berserker!',u.sprite.x,u.sprite.y-82,0xff8a62);}
-  handleStalemateTurn(u){if(this.damageSerial===u.damageAtTurnStart)this.noDamageTurns++;else this.noDamageTurns=0;if(this.noDamageTurns<5)return;this.noDamageTurns=0;this.stalemateResets++;if(this.stalemateResets<=2){flashText(this,`Reposicionamiento anti-bloqueo ${this.stalemateResets}/2`,640,125,0xffdf76);this.repositionTeams();}else this.resolveByHp();}
+  handleStalemateTurn(){
+    // El contador es global: cualquier daño causado por cualquier unidad corta
+    // inmediatamente la racha de turnos sin daño.
+    if(this.damageSerial!==this.lastStalemateDamageSerial){
+      this.lastStalemateDamageSerial=this.damageSerial;
+      this.noDamageTurns=0;
+      return;
+    }
+    this.noDamageTurns++;
+    if(this.noDamageTurns<5)return;
+    this.noDamageTurns=0;
+    this.stalemateResets++;
+    if(this.stalemateResets<=2){
+      flashText(this,`Reposicionamiento anti-bloqueo ${this.stalemateResets}/2`,640,125,0xffdf76);
+      this.repositionTeams();
+      return;
+    }
+    this.resolveStalemateDefeat();
+  }
+  resolveStalemateDefeat(){
+    if(this.battleOver)return;
+    this.battleOver=true;
+    this.log.add('battle_end','Derrota por bloqueo prolongado',{round:SAVE.round,stalemateResets:this.stalemateResets});
+    this.clearHighlights();
+    flashText(this,'Derrota: tercer bloqueo consecutivo',640,150,0xff6571);
+    this.time.delayedCall(700,()=>this.showDefeat());
+  }
   repositionTeams(){for(const team of ['player','enemy']){const units=this.units.filter(u=>u.alive&&u.team===team&&!u.isObstacle);const cols=team==='player'?[0,1,2]:[5,4,3];const slots=[];for(const c of cols)for(let r=0;r<3;r++)slots.push({col:c,row:r});units.forEach((u,i)=>{const spot=slots.find(p=>!this.unitAt(p.col,p.row)||this.unitAt(p.col,p.row)===u);if(spot)this.moveUnit(u,spot.col,spot.row);});}}
   resolveByHp(){const hp=team=>this.units.filter(u=>u.alive&&u.team===team&&!u.isObstacle).reduce((n,u)=>n+Math.max(0,u.hp),0);const p=hp('player'),e=hp('enemy');this.battleOver=true;flashText(this,`Desempate por HP: ${p} - ${e}`,640,150,0xffe596);this.time.delayedCall(700,()=>p>=e?this.showVictory():this.showDefeat());}
   showStats(u){
