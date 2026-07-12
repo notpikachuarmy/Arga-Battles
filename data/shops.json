@@ -1,1 +1,14 @@
-{}
+{
+  "runMerchant": {
+    "relicOfferCount": 3,
+    "recruitOfferCount": 3,
+    "soldierPointAmount": 2,
+    "soldierPointCost": 35,
+    "rerollBaseCost": 45,
+    "rerollCostIncrease": 25,
+    "relicPrices": {"N": 25, "R": 40, "SR": 60, "SSR": 85, "UR": 120},
+    "recruitPrices": {"N": 30, "R": 45, "SR": 65, "SSR": 90, "UR": 125},
+    "dismissBaseByRarity": {"N": 12, "R": 20, "SR": 32, "SSR": 48, "UR": 70},
+    "dismissGoldPerLevel": 5
+  }
+}

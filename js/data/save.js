@@ -3,9 +3,9 @@ import { CLASS_KEYS, CLASSES } from './classes.js';
 import { randomBlessing } from './blessings.js';
 import { generateExpeditionMap } from '../systems/mapGenerator.js';
 
-export const SAVE_VERSION = 3;
-export const RUN_SAVE_KEY = 'argaBattles.run.v3';
-export const PREVIOUS_RUN_SAVE_KEYS = ['argaBattles.run.v2','argaBattles.run.v1'];
+export const SAVE_VERSION = 4;
+export const RUN_SAVE_KEY = 'argaBattles.run.v4';
+export const PREVIOUS_RUN_SAVE_KEYS = ['argaBattles.run.v3','argaBattles.run.v2','argaBattles.run.v1'];
 export const META_SAVE_KEY = 'argaBattles.meta.v1';
 
 const freshRunState = () => ({
