@@ -1,5 +1,5 @@
 import { GAME, BALANCE } from '../config.js';
-import { SAVE, createRecruit, completeCurrentNode, saveRun } from '../data/save.js';
+import { SAVE, createRecruit, completeCurrentNode, saveRun, spendGold } from '../data/save.js';
 import { CLASSES } from '../data/classes.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { RELICS, RELIC_KEYS, hasRelic } from '../data/relics.js';
@@ -27,7 +27,7 @@ export class NodeEventScene extends Phaser.Scene{
     this.add.text(640,82,text,{fontSize:'36px',fontStyle:'bold',color:'#ffe59b'}).setOrigin(.5);
     if(sub)this.add.text(640,126,sub,{fontSize:'16px',color:'#ddd2e4',align:'center',wordWrap:{width:850}}).setOrigin(.5);
   }
-  finish(gold=0){completeCurrentNode({won:true,gold});this.scene.start('Map');}
+  finish(gold=0,goldSource='event'){completeCurrentNode({won:true,gold,goldSource});this.scene.start('Map');}
   message(text,color='#ff7983'){this.notice?.destroy();this.notice=this.add.text(640,650,text,{fontSize:'16px',fontStyle:'bold',color,align:'center'}).setOrigin(.5);}
   choiceCard(x,y,w,h,title,body,onClick,texture=null){
     const bg=this.add.rectangle(x,y,w,h,0x21172d,.98).setStrokeStyle(2,0x806996).setInteractive({useHandCursor:true});
@@ -64,7 +64,7 @@ export class NodeEventScene extends Phaser.Scene{
   }
   merchant(){
     this.title('MERCADER',`Oro disponible: ${SAVE.gold}`);const offers=[{y:275,label:'Refuerzo de expedición · 15 oro',desc:`+${BALANCE.soldierPointsReward} puntos de soldado`,cost:15,act:()=>SAVE.soldierPoints=Math.min(BALANCE.maxSoldierPoints,SAVE.soldierPoints+BALANCE.soldierPointsReward)},{y:390,label:'Suministros · 10 oro',desc:'Recibe una reserva de 5 oro al completar el nodo',cost:10,bonus:5,act:()=>{}}];
-    offers.forEach(o=>{this.add.text(430,o.y,o.label,{fontSize:'20px',fontStyle:'bold',color:'#fff'});this.add.text(430,o.y+32,o.desc,{fontSize:'15px',color:'#cfc2d8'});makeButton(this,850,o.y+18,190,52,'COMPRAR',()=>{if(SAVE.gold<o.cost)return this.message('No tienes suficiente oro.');SAVE.gold-=o.cost;o.act();saveRun();this.finish(o.bonus||0);});});makeButton(this,640,545,300,56,'MARCHARSE',()=>this.finish());
+    offers.forEach(o=>{this.add.text(430,o.y,o.label,{fontSize:'20px',fontStyle:'bold',color:'#fff'});this.add.text(430,o.y+32,o.desc,{fontSize:'15px',color:'#cfc2d8'});makeButton(this,850,o.y+18,190,52,'COMPRAR',()=>{if(!spendGold(o.cost,'merchant_purchase'))return this.message('No tienes suficiente oro.');o.act();saveRun();this.finish(o.bonus||0,o.bonus?'merchant_supplies':'event');});});makeButton(this,640,545,300,56,'MARCHARSE',()=>this.finish());
   }
   event(){
     this.currentEventId=this.requestedEventId||chooseEvent();this.page=this.requestedPage||0;

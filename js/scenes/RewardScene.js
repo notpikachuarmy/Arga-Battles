@@ -17,7 +17,7 @@ export class RewardScene extends Phaser.Scene {
     this.add.text(640,170,this.bossReward?'El guardián ha dejado una recompensa superior.':'Has encontrado un nodo de recompensa.',{fontSize:'17px',color:'#ddd2e4'}).setOrigin(.5);
     this.rollReward();
   }
-  continue(){if(this.fromMap)completeCurrentNode({won:true,gold:5});SAVE.pendingBossReward=false;saveRun();this.scene.start('Map');}
+  continue(){if(this.fromMap)completeCurrentNode({won:true,gold:5,goldSource:'boss_reward'});SAVE.pendingBossReward=false;saveRun();this.scene.start('Map');}
   rollReward(){
     const unavailable=new Set([...(SAVE.relics||[]),...(SAVE.retiredRelics||[])]);
     const availableRelics=RELIC_KEYS.filter(id=>!unavailable.has(id));

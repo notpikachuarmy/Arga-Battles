@@ -278,7 +278,7 @@ export class BattleScene extends Phaser.Scene{
     this.add.rectangle(640,360,700,440,0x171020,.99).setStrokeStyle(4,0x66e38e).setDepth(51);
     this.add.text(640,185,SAVE.pendingNodeType==='boss'?'¡BOSS DERROTADO!':'¡VICTORIA!',{fontSize:'42px',fontStyle:'bold',color:'#79ee9c'}).setOrigin(.5).setDepth(52);
     const completed=SAVE.round,xp=BALANCE.xpBase+completed*BALANCE.xpPerRound,results=awardGlobalXp(xp),leveled=results.filter(x=>x.leveled),gold=10+(SAVE.mapNumber-1)*3+(SAVE.pendingNodeType==='boss'?25:0);
-    completeCurrentNode({won:true,gold});
+    completeCurrentNode({won:true,gold,goldSource:SAVE.pendingNodeType==='boss'?'boss':'combat'});
     this.add.text(640,260,`+${results[0]?.awardedXp??xp} XP global · +${gold} oro`,{fontSize:'20px',color:'#ffe596'}).setOrigin(.5).setDepth(52);
     const lines=leveled.length?leveled.map(x=>`${x.name}: Nv. ${x.previousLevel} → ${x.newLevel}${x.learned.length?' · Nueva habilidad':''}`).join('\n'):'La plantilla se recuperará antes del siguiente nodo.';
     this.add.text(640,350,lines,{fontSize:'16px',color:'#ddd4e5',align:'center',lineSpacing:7,wordWrap:{width:570}}).setOrigin(.5).setDepth(52);
@@ -299,8 +299,8 @@ export class BattleScene extends Phaser.Scene{
       this.add.text(640,330,`Has perdido una vida. Te quedan ${remaining}.\nLas unidades se recuperan y el nodo no entrega recompensa.`,{fontSize:'20px',color:'#eee5f2',align:'center',lineSpacing:9}).setOrigin(.5).setDepth(52);
       makeButton(this,640,470,320,64,'VOLVER AL MAPA',()=>this.scene.start('Map')).setDepth(52);
     }else{
-      const earned=finishRun();
-      this.add.text(640,330,`La run ha terminado.\nMoneda permanente obtenida: ${earned}.\nEl guardado de la run ha sido eliminado.`,{fontSize:'20px',color:'#eee5f2',align:'center',lineSpacing:9}).setOrigin(.5).setDepth(52);
+      const summary=finishRun();
+      this.add.text(640,330,`La run ha terminado.\nOro total ganado: ${summary.totalGoldEarned}.\nNúcleos de Energía Arga obtenidos: ${summary.coresEarned}.\nEl oro restante se ha perdido.`,{fontSize:'20px',color:'#eee5f2',align:'center',lineSpacing:9}).setOrigin(.5).setDepth(52);
       makeButton(this,640,490,320,64,'VOLVER AL MENÚ',()=>this.scene.start('Menu')).setDepth(52);
     }
   }

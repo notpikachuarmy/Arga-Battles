@@ -14,6 +14,6 @@ export class MenuScene extends Phaser.Scene{
     if(valid)makeButton(this,GAME.width/2,430,340,68,'CONTINUAR RUN',()=>{if(loadRun())this.scene.start('Map');else this.scene.restart();});
     makeButton(this,GAME.width/2,valid?510:440,340,58,'CODEX',()=>this.scene.start('Encyclopedia'));
     makeButton(this,GAME.width/2,valid?580:510,340,58,'TIENDA',()=>this.scene.start('Shop'));
-    this.add.text(24,690,`Moneda permanente: ${META.permanentCurrency}`,{fontSize:'15px',color:'#d9cfdf'});
+    this.add.text(24,690,`Núcleos de Energía Arga: ${META.argaCores}`,{fontSize:'15px',color:'#d9cfdf'});
   }
 }
