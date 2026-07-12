@@ -189,7 +189,13 @@ export class BattleScene extends Phaser.Scene{
   afterDamage(attacker,target,damage){if(attacker?.buffs?.some(b=>b.id==='lifesteal'))this.heal(attacker,Math.max(1,Math.floor(damage*.5)));this.checkBerserker(target);}
   heal(u,amount){const actual=Math.min(amount,u.maxHp-u.hp);u.hp+=actual;this.spawnFx(u,'heal');floatNumber(this,`+${actual}`,u.sprite.x,u.sprite.y-62,0x71ef91);this.updateUnitHp(u);}
   playHit(attacker,target,damage,fxKey,done){if(!attacker)return this.applyInstantDamage(null,target,damage,fxKey);const dx=Math.sign(target.col-attacker.col),dy=Math.sign(target.row-attacker.row),ox=attacker.sprite.x,oy=attacker.sprite.y;this.tweens.add({targets:attacker.sprite,x:ox+dx*16,y:oy+dy*16,duration:90,yoyo:true,onComplete:()=>{target.hp-=damage;this.damageSerial++;this.spawnFx(target,fxKey);floatNumber(this,`-${damage}`,target.sprite.x,target.sprite.y-62,0xff626f);this.updateUnitHp(target);if(target.hp<=0)this.killUnit(target);done?.();}});}
-  spawnFx(target,key){const fx=this.add.image(target.sprite.x,target.sprite.y,key).setDisplaySize(110,110).setAlpha(.95);this.tweens.add({targets:fx,alpha:0,scale:1.4,duration:300,onComplete:()=>fx.destroy()});}
+  spawnFx(target,key){
+    const aliases={physical:'hit',hitPhysical:'hit',hitMagic:'magic',healing:'heal'};
+    const requested=aliases[key]||key;
+    const texture=this.textures.exists(requested)?requested:(this.textures.exists('hit')?'hit':'placeholder');
+    const fx=this.add.image(target.sprite.x,target.sprite.y,texture).setDisplaySize(110,110).setAlpha(.95);
+    this.tweens.add({targets:fx,alpha:0,scale:1.4,duration:300,onComplete:()=>fx.destroy()});
+  }
   movementRange(u){return Phaser.Math.Clamp(2+Math.floor(Math.max(0,u.agi)/3),2,7);}
   validMoves(u){
     if(u.buffs?.some(b=>b.id==='immobilized'))return[];

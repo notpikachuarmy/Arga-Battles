@@ -110,5 +110,8 @@
   "enemyDecay": "abilities/enemies/decay.png",
   "enemyFrenzy": "abilities/enemies/frenzy.png",
   "enemyStoneRegeneration": "abilities/enemies/stone_regeneration.png",
-  "enemyMutation": "abilities/enemies/mutation.png"
+  "enemyMutation": "abilities/enemies/mutation.png",
+  "physical": "effects/hit_physical.png",
+  "immobilized": "status/immobilized.png",
+  "bleeding": "status/bleeding.png"
 }
