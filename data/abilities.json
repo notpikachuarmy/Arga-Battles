@@ -1,0 +1,449 @@
+{
+  "runeLightningSpear": {
+    "id": "runeLightningSpear",
+    "name": "Runa de Lanza del Rayo",
+    "icon": "runeLightning",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 3,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "line",
+    "description": "Proyectil frontal de hasta 3 casillas. Atraviesa aliados y golpea solo al primer enemigo. Inflige 1d5 + 1/3 de INT y tiene 5% de paralizar.",
+    "effectHandler": "projectileDamage",
+    "effectData": {
+      "die": 5,
+      "scaling": {
+        "int": 3
+      },
+      "defenseDivisor": 4,
+      "minimumDamage": 1,
+      "fx": "lightningFx",
+      "status": {
+        "id": "paralyzed",
+        "duration": 1,
+        "chance": 0.05
+      },
+      "relicBonus": {
+        "id": "yellowKimolia",
+        "amount": 2
+      }
+    }
+  },
+  "runeFadingFire": {
+    "id": "runeFadingFire",
+    "name": "Runa de Fuego Perecedero",
+    "icon": "runeFadingFire",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 0,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Durante 2 turnos, los ataques y habilidades ofensivas de la unidad infligen 1d4 de daño extra.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "buff": {
+        "id": "fireDamage",
+        "remaining": 2
+      }
+    }
+  },
+  "runeEarthWall": {
+    "id": "runeEarthWall",
+    "name": "Runa de Muro Terrestre",
+    "icon": "runeEarthWall",
+    "apCost": 2,
+    "mpCost": 6,
+    "range": 1,
+    "rarity": "R",
+    "cooldown": 2,
+    "targetMode": "frontEmpty",
+    "description": "Crea delante un muro de 20 HP. Bloquea el paso y los ataques que no atraviesen obstáculos.",
+    "effectHandler": "summon",
+    "effectData": {
+      "summonId": "wall",
+      "name": "Muro Terrestre",
+      "isObstacle": true,
+      "hp": 20,
+      "df": 0
+    }
+  },
+  "runeLightBlessing": {
+    "id": "runeLightBlessing",
+    "name": "Runa de Bendición de la Luz",
+    "icon": "runeLightBlessing",
+    "apCost": 2,
+    "mpCost": 6,
+    "range": 3,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "ally",
+    "description": "Cura 8 + 1/2 de INT a la propia unidad o a un aliado situado a un máximo de 3 casillas.",
+    "effectHandler": "heal",
+    "effectData": {
+      "base": 8,
+      "scaling": {
+        "int": 2
+      }
+    }
+  },
+  "runeResurrection": {
+    "id": "runeResurrection",
+    "name": "Runa de Resurrección",
+    "icon": "runeResurrection",
+    "apCost": 3,
+    "mpCost": 12,
+    "range": 99,
+    "rarity": "SSR",
+    "cooldown": 2,
+    "targetMode": "deadAlly",
+    "description": "Devuelve al combate a un aliado caído con el 35% de su HP máximo. Solo puede usarse una vez por combate.",
+    "effectHandler": "resurrect",
+    "effectData": {
+      "onceFlag": "resurrectionUsed",
+      "hpRatio": 0.35
+    }
+  },
+  "runeStarRain": {
+    "id": "runeStarRain",
+    "name": "Runa de Lluvia de Estrellas",
+    "icon": "runeStarRain",
+    "apCost": 3,
+    "mpCost": 10,
+    "range": 99,
+    "rarity": "SR",
+    "cooldown": 2,
+    "targetMode": "cell",
+    "description": "Elige una casilla. Esa casilla y otras 2 casillas aleatorias cercanas reciben 10 de daño. Puede afectar a aliados y enemigos.",
+    "effectHandler": "randomCellDamage",
+    "effectData": {
+      "radius": 2,
+      "cells": 3,
+      "damage": 10,
+      "fx": "magic",
+      "highlightColor": 16766555
+    }
+  },
+  "runeRaiseDead": {
+    "id": "runeRaiseDead",
+    "name": "Runa del Alzamiento de la Muerte",
+    "icon": "runeRaiseDead",
+    "apCost": 3,
+    "mpCost": 10,
+    "range": 1,
+    "rarity": "SR",
+    "cooldown": 2,
+    "targetMode": "frontEmpty",
+    "description": "Invoca un zombi aliado en una casilla adyacente libre. El zombi puede moverse y atacar, pero no pertenece a la plantilla.",
+    "effectHandler": "summon",
+    "effectData": {
+      "summonId": "zombie",
+      "name": "Zombi"
+    }
+  },
+  "liquidArm": {
+    "id": "liquidArm",
+    "name": "Brazo Líquido",
+    "icon": "liquidArm",
+    "apCost": 2,
+    "mpCost": 4,
+    "range": 1,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "frontArea",
+    "description": "Golpea la casilla frontal y las dos casillas laterales. Inflige 1d3 + 1/4 de FUE.",
+    "effectHandler": "areaDamage",
+    "effectData": {
+      "die": 3,
+      "scaling": {
+        "str": 4
+      },
+      "defenseDivisor": 4,
+      "minimumDamage": 1,
+      "fx": "liquidFx"
+    }
+  },
+  "miniaturize": {
+    "id": "miniaturize",
+    "name": "Miniaturizar",
+    "icon": "miniaturize",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 0,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Reduce el tamaño al 50% durante 3 turnos. Otorga +10% de Sigilo, +2 AGI y -1 FUE. No es acumulable.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "unique": true,
+      "buff": {
+        "id": "miniaturized",
+        "remaining": 3,
+        "str": -1,
+        "agi": 2,
+        "stealth": 10,
+        "scale": 0.5
+      },
+      "spriteScale": 0.5
+    }
+  },
+  "adaptiveResistance": {
+    "id": "adaptiveResistance",
+    "name": "Resistencia Adaptada",
+    "icon": "adaptiveResistance",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Durante el resto del combate, los nuevos efectos negativos duran 3 turnos menos, con un mínimo de 1 turno.",
+    "effectHandler": "addPersistentBuff",
+    "effectData": {
+      "buff": {
+        "id": "adaptiveResistance",
+        "remaining": 999
+      }
+    }
+  },
+  "wateryDodge": {
+    "id": "wateryDodge",
+    "name": "Esquiva Acuosa",
+    "icon": "wateryDodge",
+    "apCost": 2,
+    "mpCost": 6,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Anula por completo el próximo ataque o habilidad dañina que reciba la unidad.",
+    "effectHandler": "addPersistentBuff",
+    "effectData": {
+      "buff": {
+        "id": "wateryDodge",
+        "remaining": 999
+      }
+    }
+  },
+  "maximize": {
+    "id": "maximize",
+    "name": "Maximizar",
+    "icon": "maximize",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 0,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Aumenta el tamaño durante 3 turnos: +3 FUE, +3 DF y -1 AGI. No es acumulable.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "unique": true,
+      "buff": {
+        "id": "maximized",
+        "remaining": 3,
+        "str": 3,
+        "df": 3,
+        "agi": -1,
+        "scale": 1.25
+      },
+      "spriteScale": 1.25
+    }
+  },
+  "perfectTransformation": {
+    "id": "perfectTransformation",
+    "name": "Transformación Perfecta",
+    "icon": "perfectTransformation",
+    "apCost": 3,
+    "mpCost": 10,
+    "range": 99,
+    "rarity": "SSR",
+    "cooldown": 2,
+    "targetMode": "anyUnit",
+    "description": "Copia durante 3 turnos la apariencia, estadísticas y habilidades de otra unidad. Conserva HP, MP, nivel y bendición.",
+    "effectHandler": "perfectTransformation",
+    "effectData": {
+      "stats": [
+        "str",
+        "int",
+        "df",
+        "agi",
+        "charisma",
+        "will",
+        "stealth",
+        "perception"
+      ],
+      "buffId": "transformed",
+      "duration": 3
+    }
+  },
+  "imperfectTransformation": {
+    "id": "imperfectTransformation",
+    "name": "Transformación Imperfecta",
+    "icon": "imperfectTransformation",
+    "apCost": 2,
+    "mpCost": 7,
+    "range": 0,
+    "rarity": "SR",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Copia la última habilidad activa utilizada por el equipo rival hasta que termine la ronda de turnos actual.",
+    "effectHandler": "copyLastEnemyAbility",
+    "effectData": {
+      "buffId": "copiedAbility",
+      "duration": 1,
+      "noAbilityMessage": "El rival aún no ha usado una habilidad."
+    }
+  },
+  "devilBloodThorns": {
+    "id": "devilBloodThorns",
+    "name": "Sangre de Diablo de Espinas",
+    "icon": "bloodThorns",
+    "apCost": 2,
+    "mpCost": 4,
+    "range": 0,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "+2 FUE y +2 DF durante 2 turnos. Tras pagar el coste, restaura 1 AP.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "buff": {
+        "id": "bloodThorns",
+        "remaining": 2,
+        "str": 2,
+        "df": 2
+      },
+      "fx": "bloodFx",
+      "apRefund": 1
+    }
+  },
+  "jetBlackRipperBlood": {
+    "id": "jetBlackRipperBlood",
+    "name": "Sangre de Desgarrador Azabache",
+    "icon": "jetBlackRipperBlood",
+    "apCost": 2,
+    "mpCost": 6,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Durante 2 turnos obtiene +2 AGI y Sigilo. Para el rival se vuelve invisible salvo al estar adyacente. Atacar o usar una habilidad ofensiva rompe el Sigilo.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "buff": {
+        "id": "stealth",
+        "remaining": 2,
+        "agi": 2
+      }
+    }
+  },
+  "spitterSpawnBlood": {
+    "id": "spitterSpawnBlood",
+    "name": "Sangre de Engendro Escupidor",
+    "icon": "spitterSpawnBlood",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 3,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "line",
+    "description": "Escupe veneno al primer enemigo en línea hasta 3 casillas. Aplica 2 de daño durante 5 turnos.",
+    "effectHandler": "applyStatusProjectile",
+    "effectData": {
+      "status": {
+        "id": "poison",
+        "duration": 5
+      },
+      "message": "¡Envenenado!",
+      "color": 8643438
+    }
+  },
+  "bloodThirst": {
+    "id": "bloodThirst",
+    "name": "Sed de Sangre",
+    "icon": "bloodThirst",
+    "apCost": 0,
+    "mpCost": 0,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Pierde 5 HP para ganar +3 AP y +1 FUE durante este turno. No puede usarse si dejaría a la unidad fuera de combate.",
+    "effectHandler": "healthForResources",
+    "effectData": {
+      "hpCost": 5,
+      "apGain": 3,
+      "buff": {
+        "id": "bloodThirst",
+        "remaining": 1,
+        "str": 1
+      },
+      "insufficientMessage": "No tienes suficiente HP."
+    }
+  },
+  "crimsonPact": {
+    "id": "crimsonPact",
+    "name": "Pacto Carmesí",
+    "icon": "crimsonPact",
+    "apCost": 2,
+    "mpCost": 5,
+    "range": 0,
+    "rarity": "SR",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Sacrifica el 25% del HP actual y obtiene +5 FUE durante 3 turnos.",
+    "effectHandler": "sacrificePercentBuff",
+    "effectData": {
+      "hpRatio": 0.25,
+      "buff": {
+        "id": "crimsonPact",
+        "remaining": 3,
+        "str": 5
+      }
+    }
+  },
+  "demonicHeart": {
+    "id": "demonicHeart",
+    "name": "Corazón Demoníaco",
+    "icon": "demonicHeart",
+    "apCost": 2,
+    "mpCost": 7,
+    "range": 0,
+    "rarity": "SR",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Durante 3 turnos, la unidad recupera HP equivalente al 50% del daño que inflige.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "buff": {
+        "id": "lifesteal",
+        "remaining": 3
+      }
+    }
+  },
+  "finalOffering": {
+    "id": "finalOffering",
+    "name": "Última Ofrenda",
+    "icon": "finalOffering",
+    "apCost": 3,
+    "mpCost": 9,
+    "range": 1,
+    "rarity": "SSR",
+    "cooldown": 2,
+    "targetMode": "self",
+    "description": "Sacrifica el 30% del HP actual e inflige 12 + FUE a todos los enemigos adyacentes. Recupera 5 HP por cada enemigo derrotado.",
+    "effectHandler": "adjacentSacrificeDamage",
+    "effectData": {
+      "hpRatio": 0.3,
+      "baseDamage": 12,
+      "scaling": {
+        "str": 1
+      },
+      "healPerKill": 5,
+      "fx": "magic"
+    }
+  }
+}
