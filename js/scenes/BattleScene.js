@@ -38,7 +38,7 @@ export class BattleScene extends Phaser.Scene{
     const node=SAVE.generatedMap?.nodes?.find(n=>n.id===SAVE.pendingNodeId);
     const difficulty=calculateDifficulty(SAVE,node),baseScale=earlyEnemyScaling(SAVE.round),extra=Math.max(0,difficulty.score-1);
     const scale={hp:baseScale.hp*(1+extra*.10),combat:baseScale.combat*(1+extra*.065)};
-    this.enemyPositions.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,p.level||1),null,scale,p.learnedAbilities,p.blessing,{aiProfile:p.aiProfile}));
+    this.enemyPositions.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,p.level||1),null,scale,p.learnedAbilities,p.blessing,{aiProfile:p.aiProfile,name:p.name}));
     this.applyBlessings();this.units.forEach(u=>this.drawUnit(u));
     this.action='none';this.active=null;this.selectedSkillIndex=0;this.turnQueue=[];this.queueIndex=0;this.battleOver=false;this.autoBattle=false;this.actionLocked=false;
     this.createHud();this.buildTurnQueue();this.beginTurn();
@@ -283,9 +283,11 @@ export class BattleScene extends Phaser.Scene{
     const lines=leveled.length?leveled.map(x=>`${x.name}: Nv. ${x.previousLevel} → ${x.newLevel}${x.learned.length?' · Nueva habilidad':''}`).join('\n'):'La plantilla se recuperará antes del siguiente nodo.';
     this.add.text(640,350,lines,{fontSize:'16px',color:'#ddd4e5',align:'center',lineSpacing:7,wordWrap:{width:570}}).setOrigin(.5).setDepth(52);
     const wasBoss=SAVE.generatedMap?.bossNodeId===SAVE.lastCompletedNodeId;
-    makeButton(this,640,510,340,66,SAVE.pendingSkillChoices.length?'ELEGIR HABILIDAD':wasBoss?'NUEVO MAPA':'VOLVER AL MAPA',()=>{
+    if(wasBoss){SAVE.pendingBossReward=true;saveRun();}
+    makeButton(this,640,510,340,66,SAVE.pendingSkillChoices.length?'ELEGIR HABILIDAD':wasBoss?'RECOMPENSA DE BOSS':'VOLVER AL MAPA',()=>{
       if(wasBoss)advanceAfterBoss();
-      this.scene.start(SAVE.pendingSkillChoices.length?'SkillChoice':'Map',{nextScene:'Map'});
+      const next=wasBoss?'Reward':'Map';
+      this.scene.start(SAVE.pendingSkillChoices.length?'SkillChoice':next,{nextScene:next,bossReward:wasBoss});
     }).setDepth(52);
   }
   showDefeat(){

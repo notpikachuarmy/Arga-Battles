@@ -9,6 +9,7 @@ import { makeButton, flashText } from '../utils/helpers.js';
 
 export class PlacementScene extends Phaser.Scene{
   constructor(){super('Placement');}
+  init(data){this.nodeType=data?.nodeType||SAVE.pendingNodeType||'combat';this.difficulty=data?.difficulty||{score:1};}
 
   create(){
     const {width:W,height:H,tile:T,cols,rows,gridX,gridY}=GAME;
@@ -222,9 +223,10 @@ export class PlacementScene extends Phaser.Scene{
   }
 
   createEnemyPreview(){
-    this.enemyTeam=Array.from({length:this.maxDeploy()},()=>randomTeam()[0]);
-    const count=this.maxDeploy();const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,count);
-    this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,aiProfile:({rune:'balanced',formless:'flanker',demon:'aggressive'}[recruit.type]||'balanced'),level:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]}));
+    const isBoss=this.nodeType==='boss';
+    const count=isBoss?Math.min(5,this.maxDeploy()+1):this.maxDeploy();
+    this.enemyTeam=Array.from({length:count},()=>randomTeam()[0]);const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,count);
+    this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,name:isBoss&&i===0?`Guardián ${CLASSES[recruit.type].name}`:null,aiProfile:isBoss&&i===0?'boss':({rune:'balanced',formless:'flanker',demon:'aggressive'}[recruit.type]||'balanced'),level:isBoss&&i===0?3:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]}));
     this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.gridY+p.row*GAME.tile+GAME.tile/2,p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
     this.refreshPoints();
   }
@@ -234,7 +236,8 @@ export class PlacementScene extends Phaser.Scene{
     const deployed=this.deployedUnits();
     if(deployed.length!==this.maxDeploy()){flashText(this,`Debes colocar exactamente ${this.maxDeploy()} unidades.`,GAME.width/2,620,0xffbd69);return;}
     const playerLevels=Phaser.Utils.Array.Shuffle(deployed.map(u=>u.recruit.level));
-    this.enemyPositions.forEach((p,i)=>p.level=playerLevels[i%playerLevels.length]);
+    const bossBonus=this.nodeType==='boss'?2:0;
+    this.enemyPositions.forEach((p,i)=>p.level=Math.min(10,playerLevels[i%playerLevels.length]+bossBonus+(this.nodeType==='boss'&&i===0?1:0)));
     const min=Math.max(0,SAVE.relics.length-2),max=Math.min(RELIC_KEYS.length,SAVE.relics.length+2);
     const enemyRelicCount=Phaser.Math.Between(min,max);
     SAVE.enemyRelics=Phaser.Utils.Array.Shuffle([...RELIC_KEYS]).slice(0,enemyRelicCount);

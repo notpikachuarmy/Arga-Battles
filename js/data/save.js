@@ -33,6 +33,7 @@ const freshRunState = () => ({
   currentMerchant: null,
   pendingNodeId: null,
   pendingNodeType: null,
+  pendingBossReward: false,
   lastCompletedNodeId: null,
   createdAt: null,
   updatedAt: null
@@ -78,7 +79,12 @@ export function loadRun(){
 
 export function deleteRunSave(){ localStorage.removeItem(RUN_SAVE_KEY);localStorage.removeItem(LEGACY_RUN_SAVE_KEY);replaceObject(SAVE,freshRunState()); }
 
-export function randomClass(){ return Phaser.Utils.Array.GetRandom(CLASS_KEYS); }
+export function unlockedClassKeys(){
+  const explicit=(SAVE.unlockedContent||[]).map(String);
+  const unlocked=CLASS_KEYS.filter(id=>explicit.includes(id)||explicit.includes(`class:${id}`));
+  return unlocked.length?unlocked:CLASS_KEYS;
+}
+export function randomClass(){ return Phaser.Utils.Array.GetRandom(unlockedClassKeys()); }
 export function createRecruit(type = randomClass()){
   const pool = CLASSES[type]?.startingAbilityPool ?? CLASSES[type]?.abilityPool ?? [];
   const initial = pool.length ? [Phaser.Utils.Array.GetRandom(pool)] : [];

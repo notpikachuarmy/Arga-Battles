@@ -20,19 +20,23 @@ export class NodeEventScene extends Phaser.Scene{
   title(text,sub=''){this.add.text(640,120,text,{fontSize:'38px',fontStyle:'bold',color:'#ffe59b'}).setOrigin(.5);if(sub)this.add.text(640,165,sub,{fontSize:'17px',color:'#ddd2e4'}).setOrigin(.5);}
   finish(gold=0){completeCurrentNode({won:true,gold});this.scene.start('Map');}
   recruit(){
-    this.title('RECLUTAMIENTO','Elige una unidad para añadir a la expedición.');
-    const count=hasRelic(SAVE,'recruiterManual')?2:1,recruits=Array.from({length:count},()=>createRecruit());
-    recruits.forEach((r,i)=>{const c=CLASSES[r.type],b=BLESSINGS[r.blessing],x=count===2?480+i*320:640;
-      const card=this.add.rectangle(x,380,280,350,0x21172d,.98).setStrokeStyle(3,0x806996).setInteractive({useHandCursor:true});
-      this.add.image(x,310,c.portrait).setDisplaySize(150,150);this.add.image(x+82,370,b.texture).setDisplaySize(48,48);
-      this.add.text(x,435,`${c.name}\nNivel 1 · ${r.blessing}`,{fontSize:'18px',fontStyle:'bold',color:'#fff',align:'center'}).setOrigin(.5);
-      this.add.text(x,505,'RECLUTAR',{fontSize:'18px',fontStyle:'bold',color:'#ffe59b'}).setOrigin(.5);
-      card.on('pointerdown',()=>{SAVE.playerRoster.push(r);this.finish();});
+    const manual=hasRelic(SAVE,'recruiterManual');
+    const recruits=Array.from({length:manual?2:1},()=>createRecruit());
+    this.title('RECLUTAMIENTO',manual?'El Manual del Reclutador permite incorporar las dos unidades.':'Una unidad se unirá a la expedición.');
+    recruits.forEach((r,i)=>{const c=CLASSES[r.type],b=BLESSINGS[r.blessing],x=manual?480+i*320:640;
+      this.add.rectangle(x,365,280,330,0x21172d,.98).setStrokeStyle(3,0x806996);
+      this.add.image(x,295,c.portrait).setDisplaySize(145,145);this.add.image(x+82,350,b.texture).setDisplaySize(46,46);
+      this.add.text(x,420,`${c.name} · ${c.rarity}
+Nivel 1 · ${b.name||r.blessing}`,{fontSize:'17px',fontStyle:'bold',color:'#fff',align:'center'}).setOrigin(.5);
+      const ability=r.learnedAbilities[0];
+      this.add.text(x,475,ability?'Habilidad inicial generada':'Sin habilidad inicial',{fontSize:'13px',color:'#cfc2d8'}).setOrigin(.5);
     });
+    makeButton(this,640,570,manual?340:300,60,manual?'RECLUTAR AMBAS':'RECLUTAR',()=>{SAVE.playerRoster.push(...recruits);this.finish();});
   }
   relic(){
     this.title('RELIQUIA','Una pieza de poder se une a la expedición.');
-    const available=RELIC_KEYS.filter(id=>!SAVE.relics.includes(id));
+    const unavailable=new Set([...(SAVE.relics||[]),...(SAVE.retiredRelics||[])]);
+    const available=RELIC_KEYS.filter(id=>!unavailable.has(id));
     if(!available.length){this.add.text(640,340,'Ya posees todas las reliquias disponibles.\nRecibes 20 de oro en su lugar.',{fontSize:'22px',color:'#eee5f2',align:'center'}).setOrigin(.5);return makeButton(this,640,540,300,60,'CONTINUAR',()=>this.finish(20));}
     const id=Phaser.Utils.Array.GetRandom(available),r=RELICS[id];
     this.add.image(640,315,r.icon).setDisplaySize(150,150);this.add.text(640,420,`${r.name} · ${r.rarity}`,{fontSize:'28px',fontStyle:'bold',color:'#fff'}).setOrigin(.5);
