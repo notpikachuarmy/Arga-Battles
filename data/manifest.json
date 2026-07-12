@@ -1,6 +1,0 @@
-{
-  "classes":"classes.json","abilities":"abilities.json","relics":"relics.json","blessings":"blessings.json",
-  "enemies":"enemies.json","bosses":"bosses.json","statuses":"statuses.json","summons":"summons.json",
-  "units":"units.json","events":"events.json","shops":"shops.json","achievements":"achievements.json","journal":"journal.json",
-  "aiProfiles":"ai_profiles.json","assets":"assets.json"
-}
