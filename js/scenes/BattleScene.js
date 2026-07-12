@@ -10,6 +10,7 @@ import { hasRelic } from '../data/relics.js';
 import { SUMMONS } from '../data/summons.js';
 import { getAIProfile } from '../data/aiProfiles.js';
 import { GameLog } from '../systems/gameLog.js';
+import { executeAbilityEffect } from '../systems/abilityEffects.js';
 
 const STATUS_TEXTURES={
   paralyzed:'paralyzed',bloodThorns:'strengthUp',fireDamage:'fireDamageUp',adaptiveResistance:'adaptiveResistanceStatus',wateryDodge:'wateryDodgeStatus',miniaturized:'miniaturized',maximized:'maximized',transformed:'transformed',stealth:'stealth',poison:'poisoned',bloodThirst:'bloodThirstStatus',crimsonPact:'crimsonPactStatus',lifesteal:'lifesteal'
@@ -138,31 +139,19 @@ export class BattleScene extends Phaser.Scene{
   trySkillTarget(target){this.trySkillCell(target.col,target.row);}
   trySkillCell(col,row){const a=this.selectedAbility();if(!a)return;const valid=this.skillCells(this.active,a).some(p=>p.col===col&&p.row===row);if(!valid)return flashText(this,'Objetivo no válido.',640,120,0xffbd69);this.executeAbility(this.active,{col,row},a);}
   executeAbility(u,targetCell,a=this.selectedAbility(u)){
-    if(!a)return;if(a.id==='bloodThirst'&&u.usedAbilitiesThisTurn?.includes(a.id))return flashText(this,'Sed de Sangre solo puede usarse una vez por turno.',640,120,0xffbd69);u.usedAbilitiesThisTurn?.push(a.id);this.lastAbilityByTeam[u.team]=a.id;
-    const target=targetCell?this.unitAt(targetCell.col,targetCell.row):null;
-    if(['runeLightningSpear','spitterSpawnBlood'].includes(a.id)){
-      if(!target||target.team===u.team)return;this.breakStealth(u);if(a.id==='runeLightningSpear'){const d=Math.max(1,rollDie(5)+Math.floor(u.int/3)-Math.floor(target.df/4))+this.bonusDamage(u)+(this.teamHasRelic(u.team,'yellowKimolia')?2:0);this.dealDamage(u,target,d,'lightningFx',()=>{if(Math.random()<.05)this.addNegativeStatus(target,'paralyzed',1);this.payAbility(u,a);});}else{this.addNegativeStatus(target,'poison',5);flashText(this,'¡Envenenado!',target.sprite.x,target.sprite.y-78,0x83e36e);this.payAbility(u,a);}return;
+    if(!a)return false;
+    if(a.id==='bloodThirst'&&u.usedAbilitiesThisTurn?.includes(a.id)){
+      flashText(this,'Sed de Sangre solo puede usarse una vez por turno.',640,120,0xffbd69);
+      return false;
     }
-    if(a.id==='liquidArm'){const ts=this.skillCells(u,a).map(p=>this.unitAt(p.col,p.row)).filter(t=>t&&t.team!==u.team);if(!ts.length)return;this.breakStealth(u);ts.forEach(t=>this.applyInstantDamage(u,t,Math.max(1,rollDie(3)+Math.floor(u.str/4)-Math.floor(t.df/4))+this.bonusDamage(u),'liquidFx'));this.payAbility(u,a);return;}
-    if(a.id==='devilBloodThorns'){this.addBuff(u,{id:'bloodThorns',remaining:2,str:2,df:2});this.spawnFx(u,'bloodFx');this.payAbility(u,a,1);return;}
-    if(a.id==='runeFadingFire'){this.addBuff(u,{id:'fireDamage',remaining:2});this.payAbility(u,a);return;}
-    if(a.id==='runeEarthWall'){if(target)return;const w=this.spawnUnit('wall',u.team,targetCell.col,targetCell.row,1,null,null,[],null,{isSummon:true,isObstacle:true,name:'Muro Terrestre',ownerId:u.id});w.maxHp=w.hp=20;w.df=0;this.drawUnit(w);this.payAbility(u,a);return;}
-    if(a.id==='runeLightBlessing'){if(!target||target.team!==u.team)return;const heal=8+Math.floor(u.int/2);this.heal(target,heal);this.payAbility(u,a);return;}
-    if(a.id==='runeResurrection'){const dead=this.units.find(t=>!t.alive&&t.team===u.team&&!t.isSummon&&t.col===targetCell.col&&t.row===targetCell.row);if(!dead||u.resurrectionUsed)return;u.resurrectionUsed=true;dead.alive=true;dead.hp=Math.max(1,Math.ceil(dead.maxHp*.35));let spot=this.unitAt(dead.col,dead.row);if(spot&&spot!==dead){const free=this.cells.find(c=>c.c<3&&!this.unitAt(c.c,c.r));if(free){dead.col=free.c;dead.row=free.r;}}const pos=this.cellCenter(dead.col,dead.row);[dead.sprite,dead.hpBack,dead.hpBar,dead.arrow].forEach(x=>x.setVisible(true).setAlpha(1));dead.sprite.setPosition(pos.x,pos.y);dead.hpBack.setPosition(pos.x,pos.y-48);dead.hpBar.setPosition(pos.x-37,pos.y-48);dead.arrow.setPosition(pos.x,pos.y+48);this.updateUnitHp(dead);this.buildTurnQueue();this.payAbility(u,a);return;}
-    if(a.id==='runeStarRain'){const center=targetCell,near=this.cells.filter(c=>Math.abs(c.c-center.col)+Math.abs(c.r-center.row)<=2&&!(c.c===center.col&&c.r===center.row));Phaser.Utils.Array.Shuffle(near);const hits=[center,...near.slice(0,2)];hits.forEach(p=>{this.highlightCell(p.col,p.row,0xffd65b);const t=this.unitAt(p.col,p.row);if(t)this.applyInstantDamage(u,t,10,'magic');});this.payAbility(u,a);return;}
-    if(a.id==='runeRaiseDead'){if(target)return;const z=this.spawnUnit('zombie',u.team,targetCell.col,targetCell.row,1,null,null,[],null,{isSummon:true,name:'Zombi',ownerId:u.id});this.drawUnit(z);this.buildTurnQueue();this.payAbility(u,a);return;}
-    if(a.id==='miniaturize'){if(!u.buffs.some(b=>b.id==='miniaturized')){this.addBuff(u,{id:'miniaturized',remaining:3,str:-1,agi:2,stealth:10,scale:.5});u.sprite.setScale(.5);}this.payAbility(u,a);return;}
-    if(a.id==='adaptiveResistance'){if(!u.buffs.some(b=>b.id==='adaptiveResistance'))u.buffs.push({id:'adaptiveResistance',remaining:999,justApplied:true});this.payAbility(u,a);return;}
-    if(a.id==='wateryDodge'){if(!u.buffs.some(b=>b.id==='wateryDodge'))u.buffs.push({id:'wateryDodge',remaining:999,justApplied:true});this.payAbility(u,a);return;}
-    if(a.id==='maximize'){if(!u.buffs.some(b=>b.id==='maximized')){this.addBuff(u,{id:'maximized',remaining:3,str:3,df:3,agi:-1,scale:1.25});u.sprite.setScale(1.25);}this.payAbility(u,a);return;}
-    if(a.id==='perfectTransformation'){if(!target||target===u)return;const original={type:u.type,name:u.name,str:u.str,int:u.int,df:u.df,agi:u.agi,charisma:u.charisma,will:u.will,stealth:u.stealth,perception:u.perception,learnedAbilities:[...u.learnedAbilities]};u.type=target.type;u.name=target.name;for(const k of ['str','int','df','agi','charisma','will','stealth','perception'])u[k]=target[k];u.learnedAbilities=[...target.learnedAbilities];u.sprite.setTexture(target.type);u.buffs.push({id:'transformed',remaining:3,original,justApplied:true});this.payAbility(u,a);return;}
-    if(a.id==='imperfectTransformation'){const enemy=u.team==='player'?'enemy':'player',copy=this.lastAbilityByTeam[enemy];if(!copy)return flashText(this,'El rival aún no ha usado una habilidad.',640,120,0xffbd69);u.copiedAbility=copy;u.buffs.push({id:'copiedAbility',remaining:1,justApplied:true});this.payAbility(u,a);return;}
-    if(a.id==='jetBlackRipperBlood'){this.addBuff(u,{id:'stealth',remaining:2,agi:2});this.payAbility(u,a);return;}
-    if(a.id==='bloodThirst'){if(u.hp<=5)return flashText(this,'No tienes suficiente HP.',640,120,0xff7777);u.hp-=5;u.ap+=3;u.str+=1;u.buffs.push({id:'bloodThirst',remaining:1,str:1,justApplied:true});this.updateUnitHp(u);this.payAbility(u,a);return;}
-    if(a.id==='crimsonPact'){const cost=Math.max(1,Math.floor(u.hp*.25));u.hp=Math.max(1,u.hp-cost);this.updateUnitHp(u);this.addBuff(u,{id:'crimsonPact',remaining:3,str:5});this.payAbility(u,a);return;}
-    if(a.id==='demonicHeart'){this.addBuff(u,{id:'lifesteal',remaining:3});this.payAbility(u,a);return;}
-    if(a.id==='finalOffering'){const cost=Math.max(1,Math.floor(u.hp*.30));u.hp=Math.max(1,u.hp-cost);this.updateUnitHp(u);let kills=0;this.units.filter(t=>t.alive&&t.team!==u.team&&Math.abs(t.col-u.col)+Math.abs(t.row-u.row)===1).forEach(t=>{const was=t.alive;this.applyInstantDamage(u,t,12+u.str,'magic');if(was&&!t.alive)kills++;});if(kills)this.heal(u,kills*5);this.payAbility(u,a);return;}
+    const executed=executeAbilityEffect(this,u,targetCell,a);
+    if(!executed)return false;
+    u.usedAbilitiesThisTurn?.push(a.id);
+    this.lastAbilityByTeam[u.team]=a.id;
+    this.log.add('ability_used',`${u.name} usa ${a.name}`,{unit:u.id,team:u.team,ability:a.id,target:targetCell,effectHandler:a.effectHandler});
+    return true;
   }
+
   addBuff(u,b){for(const k of ['str','df','agi','stealth'])if(b[k])u[k]+=b[k];u.buffs.push({...b,justApplied:true});}
   addNegativeStatus(u,id,duration){if(u.buffs.some(b=>b.id==='adaptiveResistance'))duration=Math.max(1,duration-3);if(id==='paralyzed')u.paralyzedTurns=Math.max(u.paralyzedTurns,duration);else u.buffs.push({id,remaining:duration,negative:true,justApplied:true});}
   applyTurnStartStatuses(u){const poison=u.buffs.find(b=>b.id==='poison');if(poison){this.applyInstantDamage(null,u,2,'magic');flashText(this,'Veneno -2',u.sprite.x,u.sprite.y-78,0x82db62);}}
@@ -190,9 +179,8 @@ export class BattleScene extends Phaser.Scene{
       const action=this.bestAbilityAction(u,enemyTeam);if(action){
         this.selectedSkillIndex=this.abilitiesFor(u).findIndex(a=>a.id===action.ability.id);
         try{
-          const beforeAp=u.ap,beforeMp=u.mp;
-          this.executeAbility(u,action.cell,action.ability);
-          if(u.ap===beforeAp&&u.mp===beforeMp){
+          const executed=this.executeAbility(u,action.cell,action.ability);
+          if(!executed){
             action.ability._aiBlocked=true;
             return this.time.delayedCall(80,loop);
           }

@@ -1,5 +1,6 @@
 const VALID_RARITIES = new Set(['N','R','SR','SSR','UR']);
 const VALID_AI_PROFILES = new Set(['balanced','aggressive','defensive','support','summoner','flanker','boss']);
+const VALID_EFFECT_HANDLERS = new Set(['projectileDamage','applyStatusProjectile','areaDamage','addBuff','addPersistentBuff','summon','heal','resurrect','randomCellDamage','perfectTransformation','copyLastEnemyAbility','healthForResources','sacrificePercentBuff','adjacentSacrificeDamage']);
 
 async function readJson(path){
   const response=await fetch(path,{cache:'no-store'});
@@ -36,9 +37,11 @@ export function validateGameData(data=DATA){
     for(const stat of ['constitution','energy','df','str','int','agi','charisma','will','stealth','perception'])if(!Number.isFinite(cls[stat]))issues.push(issue('error','MISSING_STAT',`La clase ${id} no tiene una estadística válida: ${stat}.`));
   }
   for(const [id,a] of Object.entries(data.abilities||{})){
-    for(const field of ['name','rarity','icon','apCost','mpCost','targetMode'])if(a[field]===undefined)issues.push(issue('error','MISSING_ABILITY_FIELD',`La habilidad ${id} no tiene ${field}.`));
+    for(const field of ['name','rarity','icon','apCost','mpCost','targetMode','effectHandler','effectData'])if(a[field]===undefined)issues.push(issue('error','MISSING_ABILITY_FIELD',`La habilidad ${id} no tiene ${field}.`));
     if(!VALID_RARITIES.has(a.rarity))issues.push(issue('error','INVALID_RARITY',`Rareza no reconocida en habilidad ${id}: ${a.rarity}`));
     if(a.apCost<0||a.mpCost<0||a.cooldown<0)issues.push(issue('error','INVALID_COST',`La habilidad ${id} tiene costes o enfriamiento negativos.`));
+    if(!VALID_EFFECT_HANDLERS.has(a.effectHandler))issues.push(issue('error','INVALID_EFFECT_HANDLER',`La habilidad ${id} usa el manejador de efecto inválido ${a.effectHandler}.`));
+    if(!a.effectData||typeof a.effectData!=='object'||Array.isArray(a.effectData))issues.push(issue('error','INVALID_EFFECT_DATA',`La habilidad ${id} no tiene effectData válido.`));
     if(a.icon&&!data.assets?.[a.icon])issues.push(issue('warning','MISSING_ASSET_REF',`La habilidad ${id} usa un icono no declarado: ${a.icon}.`));
   }
   for(const [id,r] of Object.entries(data.relics||{})){
