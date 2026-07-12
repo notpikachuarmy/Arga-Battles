@@ -46,8 +46,20 @@ export class BattleScene extends Phaser.Scene{
   }
   spawnUnit(type,team,col,row,level=1,recruitId=null,scale=null,learnedAbilities=[],blessing=null,options={}){
     let stats;
-    if(SUMMONS[type])stats={...SUMMONS[type].baseStats};
-    else if(ENEMIES[type]?.type==='exclusive'){const e=ENEMIES[type];stats={...e.baseStats};for(const [key,growth] of Object.entries(e.growth||{}))if(Number.isFinite(stats[key]))stats[key]+=Math.floor((level-1)*growth/3);stats.maxHp=Math.max(stats.maxHp,stats.constitution*5);stats.maxMp=Math.max(stats.maxMp,stats.energy*5);}
+    if(SUMMONS[type]){
+      const summonDef=SUMMONS[type],progress=Math.max(0,Math.min(1,(level-1)/(GAME.maxLevel-1)));
+      stats={...summonDef.baseStats};
+      for(const [key,growth] of Object.entries(summonDef.growth||{}))if(Number.isFinite(stats[key]))stats[key]+=Math.floor(growth*progress);
+      stats.maxHp=Math.max(stats.maxHp,stats.constitution*5);
+      stats.maxMp=Math.max(stats.maxMp,stats.energy*5);
+    }
+    else if(ENEMIES[type]?.type==='exclusive'){
+      const e=ENEMIES[type],progress=Math.max(0,Math.min(1,(level-1)/(GAME.maxLevel-1)));
+      stats={...e.baseStats};
+      for(const [key,growth] of Object.entries(e.growth||{}))if(Number.isFinite(stats[key]))stats[key]+=Math.floor(growth*progress);
+      stats.maxHp=Math.max(stats.maxHp,stats.constitution*5);
+      stats.maxMp=Math.max(stats.maxMp,stats.energy*5);
+    }
     else stats=calculateStats(type,level);
     if(team==='enemy'&&scale&&!options.isSummon){stats.maxHp=Math.max(5,Math.round(stats.maxHp*scale.hp));for(const key of ['df','str','int','agi','charisma','will','perception'])stats[key]=Math.max(1,Math.round(stats[key]*scale.combat));}
     const cls=CLASSES[type],enemyDef=ENEMIES[type];

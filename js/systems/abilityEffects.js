@@ -72,7 +72,8 @@ const handlers={
 
   summon(scene,u,targetCell,a,data){
     if(targetAt(scene,targetCell))return false;
-    const summon=scene.spawnUnit(data.summonId,u.team,targetCell.col,targetCell.row,1,null,null,[],null,{
+    const summonLevel=Number.isFinite(data.level)?data.level:Math.max(1,u.level+(data.levelOffset||0));
+    const summon=scene.spawnUnit(data.summonId,u.team,targetCell.col,targetCell.row,summonLevel,null,null,[],null,{
       isSummon:true,isObstacle:!!data.isObstacle,name:data.name,ownerId:u.id,persistentSummon:!!data.persistentSummon
     });
     if(data.hp){summon.maxHp=summon.hp=data.hp;}
