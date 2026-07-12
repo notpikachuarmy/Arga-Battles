@@ -1,5 +1,5 @@
 import { GAME, BALANCE } from '../config.js';
-import { SAVE, createRecruit } from '../data/save.js';
+import { SAVE, createRecruit, completeCurrentNode, saveRun } from '../data/save.js';
 import { CLASSES } from '../data/classes.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { RELICS, RELIC_KEYS, hasRelic } from '../data/relics.js';
@@ -7,15 +7,16 @@ import { makeButton } from '../utils/helpers.js';
 
 export class RewardScene extends Phaser.Scene {
   constructor(){ super('Reward'); }
+  init(data){this.fromMap=!!data.fromMap;}
   create(){
     this.add.image(GAME.width/2,GAME.height/2,'menuBg').setDisplaySize(GAME.width,GAME.height);
     this.add.rectangle(GAME.width/2,GAME.height/2,GAME.width,GAME.height,0x080510,.77);
     this.add.rectangle(640,360,900,540,0x15101e,.98).setStrokeStyle(4,0xe4c268);
     this.add.text(640,125,'RECOMPENSA DE RUN',{fontSize:'38px',fontStyle:'bold',color:'#ffe59b'}).setOrigin(.5);
-    this.add.text(640,170,'Cada 2 rondas aparece una recompensa especial.',{fontSize:'17px',color:'#ddd2e4'}).setOrigin(.5);
+    this.add.text(640,170,'Has encontrado un nodo de recompensa.',{fontSize:'17px',color:'#ddd2e4'}).setOrigin(.5);
     this.rollReward();
   }
-  continue(){this.scene.start('Placement');}
+  continue(){if(this.fromMap)completeCurrentNode({won:true,gold:5});else saveRun();this.scene.start(this.fromMap?'Map':'Map');}
   rollReward(){
     const availableRelics=RELIC_KEYS.filter(id=>!SAVE.relics.includes(id));
     const types=['recruit','soldier'];if(availableRelics.length)types.push('relic');

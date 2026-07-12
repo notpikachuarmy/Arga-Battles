@@ -1,4 +1,5 @@
 import { DATA, printValidationReport } from '../data/registry.js';
+import { saveRun } from '../data/save.js';
 
 export class BootScene extends Phaser.Scene {
   constructor(){super('Boot');}
@@ -15,6 +16,11 @@ export class BootScene extends Phaser.Scene {
       g.lineBetween(12,12,84,84).lineBetween(84,12,12,84);g.generateTexture('placeholder',96,96);g.destroy();
     }
     printValidationReport();
+    if(!globalThis.__argaAutosaveBound){
+      globalThis.__argaAutosaveBound=true;
+      window.addEventListener('beforeunload',saveRun);
+      document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun();});
+    }
     this.scene.start('Menu');
   }
 }

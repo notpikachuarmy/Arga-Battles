@@ -2,7 +2,7 @@ import { GAME, BALANCE } from '../config.js';
 import { CLASSES } from '../data/classes.js';
 import { ABILITIES } from '../data/abilities.js';
 import { BLESSINGS, blessingBonusForCount } from '../data/blessings.js';
-import { SAVE, resetRun } from '../data/save.js';
+import { SAVE, completeCurrentNode, loseLife, finishRun, saveRun, advanceAfterBoss } from '../data/save.js';
 import { calculateStats, earlyEnemyScaling, awardGlobalXp } from '../systems/progression.js';
 import { rollDie } from '../utils/dice.js';
 import { makeButton, flashText, floatNumber } from '../utils/helpers.js';
@@ -22,7 +22,7 @@ export class BattleScene extends Phaser.Scene{
   create(){
     const {width:W,height:H,tile:T,cols,rows,gridX,gridY}=GAME;
     this.add.image(W/2,H/2,'battleBg').setDisplaySize(W,H);this.add.rectangle(W/2,H/2,W,H,0x08050d,.17);
-    this.add.text(26,18,`RONDA ${SAVE.round}`,{fontSize:'27px',fontStyle:'bold',color:'#fff'});
+    this.add.text(26,18,`MAPA ${SAVE.mapNumber} · COMBATE ${SAVE.visitedNodes.length+1}`,{fontSize:'27px',fontStyle:'bold',color:'#fff'});
     this.infoText=this.add.text(W/2,24,'',{fontSize:'19px',fontStyle:'bold',color:'#fff',stroke:'#130d1b',strokeThickness:4}).setOrigin(.5);
     this.cells=[];
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
@@ -242,6 +242,33 @@ export class BattleScene extends Phaser.Scene{
   cellCenter(col,row){return{x:GAME.gridX+col*GAME.tile+GAME.tile/2,y:GAME.gridY+row*GAME.tile+GAME.tile/2};}
   unitAt(col,row){return this.units.find(u=>u.alive&&u.col===col&&u.row===row);}
   checkEnd(){const players=this.units.some(u=>u.alive&&u.team==='player'&&!u.isSummon),enemies=this.units.some(u=>u.alive&&u.team==='enemy'&&!u.isSummon);if(players&&enemies)return false;this.battleOver=true;this.log.add('battle_end',players?'Victoria del jugador':'Derrota del jugador',{round:SAVE.round});this.clearHighlights();this.time.delayedCall(450,()=>players?this.showVictory():this.showDefeat());return true;}
-  showVictory(){this.add.rectangle(640,360,1280,720,0x07040b,.84).setDepth(50);this.add.rectangle(640,360,700,440,0x171020,.99).setStrokeStyle(4,0x66e38e).setDepth(51);this.add.text(640,195,'¡VICTORIA!',{fontSize:'44px',fontStyle:'bold',color:'#79ee9c'}).setOrigin(.5).setDepth(52);const completed=SAVE.round,xp=BALANCE.xpBase+completed*BALANCE.xpPerRound,results=awardGlobalXp(xp),leveled=results.filter(x=>x.leveled);this.add.text(640,258,`Ronda ${completed} superada`,{fontSize:'22px',fontStyle:'bold',color:'#fff'}).setOrigin(.5).setDepth(52);this.add.text(640,305,`+${results[0]?.awardedXp??xp} XP global para toda la plantilla`,{fontSize:'19px',color:'#ffe596'}).setOrigin(.5).setDepth(52);const lines=leveled.length?leveled.map(x=>`${x.name}: Nv. ${x.previousLevel} → ${x.newLevel}${x.learned.length?' · Nueva habilidad':''}`).join('\n'):'Nadie ha subido de nivel todavía.';this.add.text(640,370,lines,{fontSize:'16px',color:'#ddd4e5',align:'center',lineSpacing:7,wordWrap:{width:570}}).setOrigin(.5).setDepth(52);const reward=completed%BALANCE.rewardEveryRounds===0;makeButton(this,640,510,340,66,reward?'VER RECOMPENSA':'SIGUIENTE RONDA',()=>{SAVE.round++;const next=reward?'Reward':'Placement';this.scene.start(SAVE.pendingSkillChoices.length?'SkillChoice':next,{nextScene:next});}).setDepth(52);}
-  showDefeat(){this.add.rectangle(640,360,1280,720,0x07040b,.84).setDepth(50);this.add.rectangle(640,360,600,350,0x171020,.98).setStrokeStyle(4,0xe2505d).setDepth(51);this.add.text(640,250,'DERROTA',{fontSize:'48px',fontStyle:'bold',color:'#ff6571'}).setOrigin(.5).setDepth(52);this.add.text(640,335,`Has alcanzado la ronda ${SAVE.round}.\nLa run ha terminado y todo el progreso se reiniciará.`,{fontSize:'20px',color:'#eee5f2',align:'center'}).setOrigin(.5).setDepth(52);makeButton(this,640,454,300,64,'VOLVER AL MENÚ',()=>{resetRun();this.scene.start('Menu');}).setDepth(52);}
+  showVictory(){
+    this.add.rectangle(640,360,1280,720,0x07040b,.84).setDepth(50);
+    this.add.rectangle(640,360,700,440,0x171020,.99).setStrokeStyle(4,0x66e38e).setDepth(51);
+    this.add.text(640,185,SAVE.pendingNodeType==='boss'?'¡BOSS DERROTADO!':'¡VICTORIA!',{fontSize:'42px',fontStyle:'bold',color:'#79ee9c'}).setOrigin(.5).setDepth(52);
+    const completed=SAVE.round,xp=BALANCE.xpBase+completed*BALANCE.xpPerRound,results=awardGlobalXp(xp),leveled=results.filter(x=>x.leveled),gold=10+(SAVE.mapNumber-1)*3+(SAVE.pendingNodeType==='boss'?25:0);
+    completeCurrentNode({won:true,gold});
+    this.add.text(640,260,`+${results[0]?.awardedXp??xp} XP global · +${gold} oro`,{fontSize:'20px',color:'#ffe596'}).setOrigin(.5).setDepth(52);
+    const lines=leveled.length?leveled.map(x=>`${x.name}: Nv. ${x.previousLevel} → ${x.newLevel}${x.learned.length?' · Nueva habilidad':''}`).join('\n'):'La plantilla se recuperará antes del siguiente nodo.';
+    this.add.text(640,350,lines,{fontSize:'16px',color:'#ddd4e5',align:'center',lineSpacing:7,wordWrap:{width:570}}).setOrigin(.5).setDepth(52);
+    const wasBoss=SAVE.generatedMap?.bossNodeId===SAVE.lastCompletedNodeId;
+    makeButton(this,640,510,340,66,SAVE.pendingSkillChoices.length?'ELEGIR HABILIDAD':wasBoss?'NUEVO MAPA':'VOLVER AL MAPA',()=>{
+      if(wasBoss)advanceAfterBoss();
+      this.scene.start(SAVE.pendingSkillChoices.length?'SkillChoice':'Map',{nextScene:'Map'});
+    }).setDepth(52);
+  }
+  showDefeat(){
+    const remaining=loseLife();
+    this.add.rectangle(640,360,1280,720,0x07040b,.84).setDepth(50);
+    this.add.rectangle(640,360,650,390,0x171020,.98).setStrokeStyle(4,0xe2505d).setDepth(51);
+    this.add.text(640,225,remaining?'DERROTA':'RUN FINALIZADA',{fontSize:'44px',fontStyle:'bold',color:'#ff6571'}).setOrigin(.5).setDepth(52);
+    if(remaining){
+      this.add.text(640,330,`Has perdido una vida. Te quedan ${remaining}.\nLas unidades se recuperan y el nodo no entrega recompensa.`,{fontSize:'20px',color:'#eee5f2',align:'center',lineSpacing:9}).setOrigin(.5).setDepth(52);
+      makeButton(this,640,470,320,64,'VOLVER AL MAPA',()=>this.scene.start('Map')).setDepth(52);
+    }else{
+      const earned=finishRun();
+      this.add.text(640,330,`La run ha terminado.\nMoneda permanente obtenida: ${earned}.\nEl guardado de la run ha sido eliminado.`,{fontSize:'20px',color:'#eee5f2',align:'center',lineSpacing:9}).setOrigin(.5).setDepth(52);
+      makeButton(this,640,490,320,64,'VOLVER AL MENÚ',()=>this.scene.start('Menu')).setDepth(52);
+    }
+  }
 }

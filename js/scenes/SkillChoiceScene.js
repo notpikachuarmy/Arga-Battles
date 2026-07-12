@@ -1,12 +1,12 @@
 import { GAME } from '../config.js';
-import { SAVE } from '../data/save.js';
+import { SAVE, saveRun } from '../data/save.js';
 import { CLASSES } from '../data/classes.js';
 import { ABILITIES } from '../data/abilities.js';
 import { makeButton } from '../utils/helpers.js';
 
 export class SkillChoiceScene extends Phaser.Scene{
   constructor(){super('SkillChoice');}
-  init(data){this.nextScene=data?.nextScene||'Placement';}
+  init(data){this.nextScene=data?.nextScene||'Map';}
   create(){this.renderChoice();}
   renderChoice(){
     this.children.removeAll();
@@ -26,7 +26,7 @@ export class SkillChoiceScene extends Phaser.Scene{
       this.add.text(x,302,`${a.name}\n${a.rarity} · ${a.apCost} AP · ${a.mpCost} MP`,{fontSize:'17px',fontStyle:'bold',color:'#fff',align:'center',wordWrap:{width:270}}).setOrigin(.5);
       this.add.text(x,385,a.description,{fontSize:'13px',color:'#ddd2e4',align:'center',wordWrap:{width:270},lineSpacing:4}).setOrigin(.5);
       this.add.text(x,520,'ELEGIR',{fontSize:'18px',fontStyle:'bold',color:'#ffe69a'}).setOrigin(.5);
-      bg.on('pointerdown',()=>{recruit.learnedAbilities.push(a.id);SAVE.pendingSkillChoices.shift();this.renderChoice();});
+      bg.on('pointerdown',()=>{recruit.learnedAbilities.push(a.id);SAVE.pendingSkillChoices.shift();saveRun();this.renderChoice();});
     });
   }
 }

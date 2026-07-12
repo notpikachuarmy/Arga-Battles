@@ -2,7 +2,7 @@ import { GAME, BALANCE } from '../config.js';
 import { CLASSES } from '../data/classes.js';
 import { ABILITIES } from '../data/abilities.js';
 import { BLESSINGS } from '../data/blessings.js';
-import { SAVE, randomTeam } from '../data/save.js';
+import { SAVE, randomTeam, saveRun } from '../data/save.js';
 import { RELIC_KEYS, hasRelic } from '../data/relics.js';
 import { calculateStats, soldierCost, xpNeeded } from '../systems/progression.js';
 import { makeButton, flashText } from '../utils/helpers.js';
@@ -14,7 +14,7 @@ export class PlacementScene extends Phaser.Scene{
     const {width:W,height:H,tile:T,cols,rows,gridX,gridY}=GAME;
     this.add.image(W/2,H/2,'battleBg').setDisplaySize(W,H);
     this.add.rectangle(W/2,H/2,W,H,0x090611,.22);
-    this.add.text(42,24,`RONDA ${SAVE.round}`,{fontSize:'34px',fontStyle:'bold',color:'#fff'});
+    this.add.text(42,24,`MAPA ${SAVE.mapNumber} · NODO ${SAVE.visitedNodes.length+1} · VIDAS ${SAVE.lives}`,{fontSize:'34px',fontStyle:'bold',color:'#fff'});
     this.add.text(W/2,42,`ELIGE Y COLOCA ${hasRelic(SAVE,'artOfWar')?4:3} UNIDADES`,{fontSize:'27px',fontStyle:'bold',color:'#fff',stroke:'#21182d',strokeThickness:5}).setOrigin(.5);
 
     this.cells=[];
@@ -230,6 +230,7 @@ export class PlacementScene extends Phaser.Scene{
   }
 
   startBattle(){
+    saveRun();
     const deployed=this.deployedUnits();
     if(deployed.length!==this.maxDeploy()){flashText(this,`Debes colocar exactamente ${this.maxDeploy()} unidades.`,GAME.width/2,620,0xffbd69);return;}
     const playerLevels=Phaser.Utils.Array.Shuffle(deployed.map(u=>u.recruit.level));
