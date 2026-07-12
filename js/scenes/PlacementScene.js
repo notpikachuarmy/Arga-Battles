@@ -3,6 +3,7 @@ import { CLASSES } from '../data/classes.js';
 import { ABILITIES } from '../data/abilities.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { SAVE, randomTeam } from '../data/save.js';
+import { RELIC_KEYS, hasRelic } from '../data/relics.js';
 import { calculateStats, soldierCost, xpNeeded } from '../systems/progression.js';
 import { makeButton, flashText } from '../utils/helpers.js';
 
@@ -14,7 +15,7 @@ export class PlacementScene extends Phaser.Scene{
     this.add.image(W/2,H/2,'battleBg').setDisplaySize(W,H);
     this.add.rectangle(W/2,H/2,W,H,0x090611,.22);
     this.add.text(42,24,`RONDA ${SAVE.round}`,{fontSize:'34px',fontStyle:'bold',color:'#fff'});
-    this.add.text(W/2,42,'ELIGE Y COLOCA 3 UNIDADES',{fontSize:'27px',fontStyle:'bold',color:'#fff',stroke:'#21182d',strokeThickness:5}).setOrigin(.5);
+    this.add.text(W/2,42,`ELIGE Y COLOCA ${hasRelic(SAVE,'artOfWar')?4:3} UNIDADES`,{fontSize:'27px',fontStyle:'bold',color:'#fff',stroke:'#21182d',strokeThickness:5}).setOrigin(.5);
 
     this.cells=[];
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
@@ -39,6 +40,7 @@ export class PlacementScene extends Phaser.Scene{
     this.refreshDetailsPanel();
 
     this.startBtnData=makeButton(this,640,670,290,56,'INICIAR COMBATE',()=>this.startBattle());
+    makeButton(this,825,670,150,46,'RELIQUIAS',()=>{this.scene.pause();this.scene.launch('Relics',{returnScene:'Placement'});});
     this.startBtn=this.startBtnData.bg;this.startBtn.setAlpha(.45);
   }
 
@@ -185,11 +187,12 @@ export class PlacementScene extends Phaser.Scene{
     flashText(this,'Selecciona una casilla verde del tablero para desplegarla.',640,118,0xffd86b);
   }
 
+  maxDeploy(){return hasRelic(SAVE,'artOfWar')?4:3;}
   deployedUnits(){return this.roster.filter(u=>u.col!==null);}
   deployedCost(){return this.deployedUnits().reduce((n,u)=>n+soldierCost(u.recruit),0);}
   refreshPoints(){
     if(this.pointsText)this.pointsText.destroy();
-    this.pointsText=this.add.text(640,104,`Margen ${SAVE.soldierPoints}/${BALANCE.maxSoldierPoints} · Coste ${this.deployedCost()}/${SAVE.soldierPoints} · Unidades ${this.deployedUnits().length}/3`,{fontSize:'16px',fontStyle:'bold',color:'#ffe596',backgroundColor:'#120d1b',padding:{x:10,y:6}}).setOrigin(.5).setDepth(6);
+    this.pointsText=this.add.text(640,104,`Margen ${SAVE.soldierPoints}/${BALANCE.maxSoldierPoints} · Coste ${this.deployedCost()}/${SAVE.soldierPoints} · Unidades ${this.deployedUnits().length}/${this.maxDeploy()}`,{fontSize:'16px',fontStyle:'bold',color:'#ffe596',backgroundColor:'#120d1b',padding:{x:10,y:6}}).setOrigin(.5).setDepth(6);
   }
 
   placeAt(c,r){
@@ -200,7 +203,7 @@ export class PlacementScene extends Phaser.Scene{
     }
     const u=this.selectedUnit();
     if(!u)return;
-    if(u.col===null&&this.deployedUnits().length>=3){flashText(this,'Solo puedes desplegar 3 unidades.',GAME.width/2,120,0xffbd69);return;}
+    if(u.col===null&&this.deployedUnits().length>=this.maxDeploy()){flashText(this,`Solo puedes desplegar ${this.maxDeploy()} unidades.`,GAME.width/2,120,0xffbd69);return;}
     const current=this.deployedCost()-(u.col!==null?soldierCost(u.recruit):0);
     if(current+soldierCost(u.recruit)>SAVE.soldierPoints){flashText(this,'No tienes suficiente margen de Puntos de Soldado.',GAME.width/2,120,0xff7777);return;}
     u.sprite?.destroy();u.col=c;u.row=r;
@@ -210,12 +213,12 @@ export class PlacementScene extends Phaser.Scene{
 
   refreshReady(){
     this.refreshRosterPanel();this.refreshDetailsPanel();this.refreshPoints();
-    this.startBtn?.setAlpha(this.deployedUnits().length===3?1:.45);
+    this.startBtn?.setAlpha(this.deployedUnits().length===this.maxDeploy()?1:.45);
   }
 
   createEnemyPreview(){
-    this.enemyTeam=randomTeam();
-    const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,3);
+    this.enemyTeam=Array.from({length:this.maxDeploy()},()=>randomTeam()[0]);
+    const count=this.maxDeploy();const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,count);
     this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,level:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]}));
     this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.gridY+p.row*GAME.tile+GAME.tile/2,p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
     this.refreshPoints();
@@ -223,7 +226,12 @@ export class PlacementScene extends Phaser.Scene{
 
   startBattle(){
     const deployed=this.deployedUnits();
-    if(deployed.length!==3){flashText(this,'Debes colocar exactamente tres unidades.',GAME.width/2,620,0xffbd69);return;}
-    this.scene.start('Battle',{positions:deployed.map(u=>({type:u.type,recruitId:u.recruit.id,name:u.recruit.customName?.trim()||CLASSES[u.type].name,level:u.recruit.level,blessing:u.recruit.blessing,learnedAbilities:u.recruit.learnedAbilities,col:u.col,row:u.row})),enemyPositions:this.enemyPositions});
+    if(deployed.length!==this.maxDeploy()){flashText(this,`Debes colocar exactamente ${this.maxDeploy()} unidades.`,GAME.width/2,620,0xffbd69);return;}
+    const playerLevels=Phaser.Utils.Array.Shuffle(deployed.map(u=>u.recruit.level));
+    this.enemyPositions.forEach((p,i)=>p.level=playerLevels[i%playerLevels.length]);
+    const min=Math.max(0,SAVE.relics.length-2),max=Math.min(RELIC_KEYS.length,SAVE.relics.length+2);
+    const enemyRelicCount=Phaser.Math.Between(min,max);
+    SAVE.enemyRelics=Phaser.Utils.Array.Shuffle([...RELIC_KEYS]).slice(0,enemyRelicCount);
+    this.scene.start('Battle',{positions:deployed.map(u=>({type:u.type,recruitId:u.recruit.id,name:u.recruit.customName?.trim()||CLASSES[u.type].name,level:u.recruit.level,blessing:u.recruit.blessing,learnedAbilities:u.recruit.learnedAbilities,col:u.col,row:u.row})),enemyPositions:this.enemyPositions,enemyRelics:SAVE.enemyRelics});
   }
 }

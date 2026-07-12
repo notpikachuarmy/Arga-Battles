@@ -1,6 +1,7 @@
 import { GAME, BALANCE } from '../config.js';
 import { CLASSES } from '../data/classes.js';
 import { SAVE } from '../data/save.js';
+import { hasRelic } from '../data/relics.js';
 
 export function xpNeeded(level){
   return BALANCE.xpNeededBase + (level - 1) * BALANCE.xpNeededPerLevel;
@@ -31,41 +32,44 @@ export function earlyEnemyScaling(round){
   return{hp:1,combat:1,label:null};
 }
 
-function learnRandomAvailable(recruit){
+function queueSkillChoice(recruit){
   const pool=CLASSES[recruit.type]?.abilityPool??[];
-  const available=pool.filter(id=>!recruit.learnedAbilities.includes(id));
-  if(!available.length)return null;
-  const id=Phaser.Utils.Array.GetRandom(available);
-  recruit.learnedAbilities.push(id);
-  return id;
+  const available=Phaser.Utils.Array.Shuffle(pool.filter(id=>!recruit.learnedAbilities.includes(id)));
+  if(!available.length)return [];
+  const count=hasRelic(SAVE,'livingLibrary')?3:2;
+  const options=available.slice(0,Math.min(count,available.length));
+  SAVE.pendingSkillChoices.push({recruitId:recruit.id,options});
+  return options;
 }
 
 export function awardGlobalXp(amount){
+  const actualAmount=Math.round(amount*(hasRelic(SAVE,'apprenticeRelic')?1.2:1));
   const results=[];
   SAVE.playerRoster.forEach(recruit=>{
     const previousLevel=recruit.level;
     const learned=[];
     if(recruit.level<GAME.maxLevel){
-      recruit.xp+=amount;
+      recruit.xp+=actualAmount;
       while(recruit.level<GAME.maxLevel&&recruit.xp>=xpNeeded(recruit.level)){
         recruit.xp-=xpNeeded(recruit.level);
         recruit.level++;
         if(GAME.abilityLevels.includes(recruit.level)){
-          const ability=learnRandomAvailable(recruit);
-          if(ability)learned.push(ability);
+          const options=queueSkillChoice(recruit);
+          if(options.length)learned.push(...options);
         }
       }
       if(recruit.level>=GAME.maxLevel)recruit.xp=0;
     }
     results.push({
       recruitId:recruit.id,
-      name:CLASSES[recruit.type].name,
+      name:recruit.customName?.trim()||CLASSES[recruit.type].name,
       previousLevel,
       newLevel:recruit.level,
       leveled:recruit.level>previousLevel,
       learned,
       xp:recruit.xp,
-      xpToNext:recruit.level<GAME.maxLevel?xpNeeded(recruit.level):0
+      xpToNext:recruit.level<GAME.maxLevel?xpNeeded(recruit.level):0,
+      awardedXp:actualAmount
     });
   });
   return results;

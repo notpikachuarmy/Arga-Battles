@@ -7,6 +7,8 @@ export const SAVE = {
   soldierPoints: BALANCE.startingSoldierPoints,
   playerRoster: [],
   relics: [],
+  enemyRelics: [],
+  pendingSkillChoices: [],
   nextRecruitId: 1
 };
 
@@ -33,5 +35,7 @@ export function resetRun(){
   SAVE.soldierPoints = BALANCE.startingSoldierPoints;
   SAVE.nextRecruitId = 1;
   SAVE.relics = [];
+  SAVE.enemyRelics = [];
+  SAVE.pendingSkillChoices = [];
   SAVE.playerRoster = randomTeam();
 }

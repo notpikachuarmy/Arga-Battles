@@ -5,6 +5,8 @@ import { PlacementScene } from './scenes/PlacementScene.js';
 import { EncyclopediaScene } from './scenes/EncyclopediaScene.js';
 import { BattleScene } from './scenes/BattleScene.js';
 import { RewardScene } from './scenes/RewardScene.js';
+import { RelicsScene } from './scenes/RelicsScene.js';
+import { SkillChoiceScene } from './scenes/SkillChoiceScene.js';
 
 new Phaser.Game({
   type:Phaser.AUTO,
@@ -14,5 +16,5 @@ new Phaser.Game({
   backgroundColor:'#090711',
   antialias:true,
   scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-  scene:[BootScene,MenuScene,EncyclopediaScene,PlacementScene,BattleScene,RewardScene]
+  scene:[BootScene,MenuScene,EncyclopediaScene,PlacementScene,BattleScene,RewardScene,SkillChoiceScene,RelicsScene]
 });

@@ -33,7 +33,8 @@ export class EncyclopediaScene extends Phaser.Scene {
     this.nav=[];
     this.nav.push(this.makeNav(115,105,'ESTADÍSTICAS',()=>this.showStatsHelp()));
     this.nav.push(this.makeNav(115,175,'BENDICIONES',()=>this.showBlessings()));
-    CLASS_KEYS.forEach((key,i)=>this.nav.push(this.makeNav(115,255+i*82,CLASSES[key].name,()=>this.showClass(key))));
+    this.nav.push(this.makeNav(115,235,'RELIQUIAS',()=>{this.scene.pause();this.scene.launch('Relics',{returnScene:'Encyclopedia',all:true});}));
+    CLASS_KEYS.forEach((key,i)=>this.nav.push(this.makeNav(115,315+i*82,CLASSES[key].name,()=>this.showClass(key))));
 
     this.content=this.add.container(260,90);
     this.showStatsHelp();
