@@ -4,6 +4,7 @@ import { CLASSES } from '../data/classes.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { RELICS, RELIC_KEYS, hasRelic } from '../data/relics.js';
 import { makeButton } from '../utils/helpers.js';
+import { acquireRelic } from '../systems/eventSystem.js';
 
 export class RewardScene extends Phaser.Scene {
   constructor(){ super('Reward'); }
@@ -49,7 +50,7 @@ Nivel 1 · ${blessing.name||recruit.blessing}`,{fontSize:'17px',fontStyle:'bold'
     this.add.text(640,420,`${r.name} · ${r.rarity}`,{fontSize:'27px',fontStyle:'bold',color:'#fff'}).setOrigin(.5);
     this.add.text(640,468,r.description,{fontSize:'17px',color:'#ddd2e4',align:'center',wordWrap:{width:650}}).setOrigin(.5);
     this.add.text(640,516,`“${r.flavor}”`,{fontSize:'14px',fontStyle:'italic',color:'#ad9db8',align:'center'}).setOrigin(.5);
-    makeButton(this,640,590,300,58,'RECOGER',()=>{if(!SAVE.relics.includes(id))SAVE.relics.push(id);this.continue();});
+    makeButton(this,640,590,300,58,'RECOGER',()=>{acquireRelic(id);this.continue();});
   }
   showSoldierReward(){
     const before=SAVE.soldierPoints;SAVE.soldierPoints=Math.min(BALANCE.maxSoldierPoints,SAVE.soldierPoints+BALANCE.soldierPointsReward);const amount=SAVE.soldierPoints-before;

@@ -1,1 +1,32 @@
-{}
+{
+  "arga_report_01": {
+    "id": "arga_report_01",
+    "title": "Informe de contención 01",
+    "author": "Científico de Arga Inc.",
+    "text": "La fragmentación no se limita al espacio. Los intervalos temporales también se superponen. Seguimos buscando un punto estable desde el que reconstruir la secuencia original."
+  },
+  "rune_notes_01": {
+    "id": "rune_notes_01",
+    "title": "Luces sin runas",
+    "author": "Trazador de Runas",
+    "text": "Las torres de este mundo producen luz sin círculos ni palabras de poder. Sus habitantes llaman electricidad a una corriente invisible que obedece a caminos de metal."
+  },
+  "child_note_01": {
+    "id": "child_note_01",
+    "title": "No encuentro a mamá",
+    "author": "Niño separado de sus padres",
+    "text": "Las calles cambiaron otra vez. Dejé una flecha en la pared para volver, pero ahora esa pared está en otro sitio. Espero que mamá también esté dejando señales."
+  },
+  "reporter_file_01": {
+    "id": "reporter_file_01",
+    "title": "Comunicado no publicado",
+    "author": "Reportera",
+    "text": "Arga Inc. conocía la anomalía antes de la evacuación. Los comunicados oficiales hablan de accidente, pero los documentos internos describen un intento deliberado de impedir el borrado del universo."
+  },
+  "criminal_log_01": {
+    "id": "criminal_log_01",
+    "title": "La ciudad abierta",
+    "author": "Criminal",
+    "text": "Cuando desaparecieron las patrullas, todos pensaron en comida. Yo pensé en las cámaras acorazadas. El fin del mundo no vuelve buena a la gente; solo elimina las consecuencias."
+  }
+}

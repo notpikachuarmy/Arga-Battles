@@ -40,7 +40,7 @@ const freshRunState = () => ({
 });
 
 export const SAVE = freshRunState();
-export const META = { version: 1, permanentCurrency: 0, completedRuns: 0, unlockedContent: [] };
+export const META = { version: 1, permanentCurrency: 0, completedRuns: 0, unlockedContent: [], discoveredRelics: [], seenEvents: [], journalEntries: [] };
 
 function replaceObject(target, source){
   Object.keys(target).forEach(k=>delete target[k]);
@@ -51,7 +51,7 @@ function now(){ return new Date().toISOString(); }
 
 export function loadMeta(){
   const data=safeParse(localStorage.getItem(META_SAVE_KEY));
-  if(data&&data.version===META.version)replaceObject(META,{...META,...data});
+  if(data&&data.version===META.version)replaceObject(META,{...META,...data,discoveredRelics:data.discoveredRelics||[],seenEvents:data.seenEvents||[],journalEntries:data.journalEntries||[]});
   return META;
 }
 export function saveMeta(){ localStorage.setItem(META_SAVE_KEY,JSON.stringify(META)); }
@@ -73,6 +73,7 @@ export function loadRun(){
   }
   if(!data||data.version!==SAVE_VERSION||!data.active)return false;
   replaceObject(SAVE,{...freshRunState(),...data});
+  SAVE.playerRoster.forEach(unit=>{if(!Number.isFinite(unit.totalXpEarned)){let total=Number(unit.xp)||0;for(let level=1;level<(unit.level||1);level++)total+=BALANCE.xpNeededBase+(level-1)*BALANCE.xpNeededPerLevel;unit.totalXpEarned=total;}unit.learnedAbilities??=[];});
   if(!SAVE.generatedMap?.rows||SAVE.generatedMap.rows!==15)SAVE.generatedMap=generateMap(SAVE.mapNumber,SAVE.seed);
   saveRun();return true;
 }
@@ -88,7 +89,7 @@ export function randomClass(){ return Phaser.Utils.Array.GetRandom(unlockedClass
 export function createRecruit(type = randomClass()){
   const pool = CLASSES[type]?.startingAbilityPool ?? CLASSES[type]?.abilityPool ?? [];
   const initial = pool.length ? [Phaser.Utils.Array.GetRandom(pool)] : [];
-  return {id:SAVE.nextRecruitId++,type,level:1,xp:0,blessing:randomBlessing(CLASSES[type].defaultBlessing),learnedAbilities:initial,customName:null};
+  return {id:SAVE.nextRecruitId++,type,level:1,xp:0,totalXpEarned:0,blessing:randomBlessing(CLASSES[type].defaultBlessing),learnedAbilities:initial,customName:null};
 }
 export function randomTeam(){ return [createRecruit(),createRecruit(),createRecruit()]; }
 

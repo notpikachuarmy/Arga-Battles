@@ -1,1 +1,44 @@
-{}
+{
+  "alchemist": {
+    "id": "alchemist",
+    "name": "El Alquimista",
+    "description": "Un alquimista errante ofrece transmutar una de tus reliquias por otra distinta.",
+    "uniquePerRun": false,
+    "condition": "alchemist"
+  },
+  "ancientAltar": {
+    "id": "ancientAltar",
+    "name": "El Altar Antiguo",
+    "description": "Una presencia antigua exige parte de tu fuerza vital a cambio de poder.",
+    "uniquePerRun": false,
+    "condition": "ancientAltar"
+  },
+  "weaponsMaster": {
+    "id": "weaponsMaster",
+    "name": "El Maestro de Armas",
+    "description": "Un veterano se ofrece a llevar inmediatamente a una unidad hasta su siguiente técnica.",
+    "uniquePerRun": false,
+    "condition": "weaponsMaster"
+  },
+  "necromancer": {
+    "id": "necromancer",
+    "name": "El Nigromante",
+    "description": "El precio de su enseñanza es un miembro de la expedición.",
+    "uniquePerRun": false,
+    "condition": "necromancer"
+  },
+  "collector": {
+    "id": "collector",
+    "name": "El Coleccionista",
+    "description": "El Coleccionista solo acepta piezas a cambio de otras de una rareza superior.",
+    "uniquePerRun": false,
+    "condition": "collector"
+  },
+  "journalEntry": {
+    "id": "journalEntry",
+    "name": "Entrada del Diario",
+    "description": "Entre los restos aparece un fragmento que ayuda a reconstruir lo ocurrido.",
+    "uniquePerRun": false,
+    "condition": "journalEntry"
+  }
+}

@@ -5,7 +5,7 @@
     "rarity": "SR",
     "icon": "relicRecruiterManual",
     "category": "Plantilla",
-    "description": "Cuando obtienes una unidad como recompensa, puedes elegir entre 2 candidatas.",
+    "description": "Cuando obtienes una unidad como recompensa de reclutamiento, recibes dos unidades en lugar de una.",
     "flavor": "Todo ejército empieza con una buena elección."
   },
   "livingLibrary": {

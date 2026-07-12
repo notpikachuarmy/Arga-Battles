@@ -50,6 +50,7 @@ export function awardGlobalXp(amount){
     const learned=[];
     if(recruit.level<GAME.maxLevel){
       recruit.xp+=actualAmount;
+      recruit.totalXpEarned=(Number(recruit.totalXpEarned)||0)+actualAmount;
       while(recruit.level<GAME.maxLevel&&recruit.xp>=xpNeeded(recruit.level)){
         recruit.xp-=xpNeeded(recruit.level);
         recruit.level++;
