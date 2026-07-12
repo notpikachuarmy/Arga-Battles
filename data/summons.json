@@ -1,0 +1,4 @@
+{
+  "zombie":{"id":"zombie","name":"Zombi","texture":"zombie","portrait":"zombiePortrait","aiProfile":"aggressive","baseStats":{"maxHp":12,"maxMp":0,"df":1,"str":2,"int":0,"agi":1,"constitution":2,"energy":0,"charisma":0,"will":1,"stealth":0,"perception":1}},
+  "wall":{"id":"wall","name":"Muro terrestre","texture":"earthWall","aiProfile":"defensive","obstacle":true,"baseStats":{"maxHp":20,"maxMp":0,"df":0,"str":0,"int":0,"agi":0,"constitution":4,"energy":0,"charisma":0,"will":99,"stealth":0,"perception":0}}
+}

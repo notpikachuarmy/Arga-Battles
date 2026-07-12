@@ -1,0 +1,5 @@
+{
+  "enemy_rune": {"id":"enemy_rune","name":"Trazador de Runas rival","type":"class","classId":"rune","playable":false,"rarity":"N","aiProfile":"balanced","abilityPool":"class"},
+  "enemy_formless": {"id":"enemy_formless","name":"Sin Forma rival","type":"class","classId":"formless","playable":false,"rarity":"N","aiProfile":"flanker","abilityPool":"class"},
+  "enemy_demon": {"id":"enemy_demon","name":"Sangre Demoníaca rival","type":"class","classId":"demon","playable":false,"rarity":"N","aiProfile":"aggressive","abilityPool":"class"}
+}
