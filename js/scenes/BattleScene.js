@@ -24,15 +24,20 @@ export class BattleScene extends Phaser.Scene{
   constructor(){super('Battle');}
   init(data){this.startPositions=data.positions;this.enemyPositions=data.enemyPositions||[];this.enemyRelics=data.enemyRelics||SAVE.enemyRelics||[];}
   create(){
-    const {width:W,height:H,tile:T,cols,rows,gridX,gridY}=GAME;
+    const {width:W,height:H,tile:T,cols,rows,gridX}=GAME;
+    const gridY=GAME.gridY;
+    this.gridY=gridY;
     this.add.image(W/2,H/2,'battleBg').setDisplaySize(W,H);this.add.rectangle(W/2,H/2,W,H,0x08050d,.17);
     this.add.text(26,18,`MAPA ${SAVE.mapNumber} · COMBATE ${SAVE.visitedNodes.length+1}`,{fontSize:'27px',fontStyle:'bold',color:'#fff'});
     this.infoText=this.add.text(W/2,24,'',{fontSize:'19px',fontStyle:'bold',color:'#fff',stroke:'#130d1b',strokeThickness:4}).setOrigin(.5);
     this.cells=[];
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
       const x=gridX+c*T+T/2,y=gridY+r*T+T/2;
-      const rect=this.add.rectangle(x,y,T-4,T-4,c<3?0x286946:0x7b303a,.30).setStrokeStyle(2,c===2||c===3?0xd6bbef:0xbdaecd,.67).setInteractive({useHandCursor:true}).on('pointerdown',()=>this.onCell(c,r));
-      this.cells.push({c,r,x,y,rect});
+      const playerZone=c<GAME.deploymentSize&&r>=3&&r<3+GAME.deploymentSize;
+      const enemyZone=c>=cols-GAME.deploymentSize&&r>=3&&r<3+GAME.deploymentSize;
+      const baseColor=playerZone?0x286946:enemyZone?0x7b303a:0x272030;
+      const rect=this.add.rectangle(x,y,T-3,T-3,baseColor,playerZone||enemyZone?0.30:0.22).setStrokeStyle(playerZone||enemyZone?2:1,playerZone?0x8cecad:enemyZone?0xff9aa3:0x756b82,.67).setInteractive({useHandCursor:true}).on('pointerdown',()=>this.onCell(c,r));
+      this.cells.push({c,r,x,y,rect,baseColor});
     }
     this.units=[];this.nextId=1;this.log=new GameLog(`battle-round-${SAVE.round}`);globalThis.ARGA_DEBUG={...(globalThis.ARGA_DEBUG||{}),battleLog:this.log};this.log.add('battle_start','Comienza el combate',{round:SAVE.round,players:this.startPositions,enemies:this.enemyPositions,enemyRelics:this.enemyRelics});this.lastAbilityByTeam={player:null,enemy:null};this.damageSerial=0;this.lastStalemateDamageSerial=0;this.noDamageTurns=0;this.stalemateResets=0;
     this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities,p.blessing,{name:p.name}));
@@ -76,7 +81,7 @@ export class BattleScene extends Phaser.Scene{
     const {x,y}=this.cellCenter(u.col,u.row);
     const texture=u.isObstacle?'earthWall':(ENEMIES[u.type]?.texture||u.type);
     u.sprite=this.add.image(x,y,texture)
-      .setDisplaySize(u.isObstacle?88:(u.size>1?94:82),u.isObstacle?88:(u.size>1?94:82))
+      .setDisplaySize(u.isObstacle?46:(u.size>1?48:42),u.isObstacle?46:(u.size>1?48:42))
       .setFlipX(u.team==='enemy'&&!u.isObstacle)
       .setDepth(8)
       .setInteractive({useHandCursor:true});
@@ -88,9 +93,9 @@ export class BattleScene extends Phaser.Scene{
       }
       this.showStats(u);
     });
-    u.hpBack=this.add.rectangle(x,y-48,76,8,0x281c2e,.95).setOrigin(.5).setDepth(9);
-    u.hpBar=this.add.rectangle(x-37,y-48,74,6,0x42d36e,1).setOrigin(0,.5).setDepth(10);
-    u.arrow=this.add.image(x,y+48,'arrow').setDisplaySize(24,24).setDepth(9).setFlipX(u.team==='enemy').setVisible(!u.isObstacle);
+    u.hpBack=this.add.rectangle(x,y-27,42,6,0x281c2e,.95).setOrigin(.5).setDepth(9);
+    u.hpBar=this.add.rectangle(x-20,y-27,40,4,0x42d36e,1).setOrigin(0,.5).setDepth(10);
+    u.arrow=this.add.image(x,y+27,'arrow').setDisplaySize(16,16).setDepth(9).setFlipX(u.team==='enemy').setVisible(!u.isObstacle);
     if(u.isObstacle){
       u.arrow.setVisible(false);
       u.sprite.removeInteractive();
@@ -99,19 +104,19 @@ export class BattleScene extends Phaser.Scene{
   }
   applyBlessings(){for(const team of ['player','enemy']){const list=this.units.filter(u=>u.team===team&&!u.isSummon&&u.blessing),counts={};list.forEach(u=>counts[u.blessing]=(counts[u.blessing]||0)+1);const resonant=team==='player'?hasRelic(SAVE,'resonantStone'):this.enemyRelics.includes('resonantStone');list.forEach(u=>{const b=BLESSINGS[u.blessing];if(!b)return;const count=(counts[u.blessing]||1)+(resonant?1:0);const bonus=blessingBonusForCount(count);u[b.stat]+=bonus;u.blessingBonus=bonus;});}}
   createHud(){
-    this.hudBg=this.add.rectangle(640,612,1235,205,0x120d1b,.97).setStrokeStyle(3,0x786589);
-    this.portrait=this.add.image(105,607,'runePortrait').setDisplaySize(120,120);
-    this.nameText=this.add.text(182,518,'',{fontSize:'20px',fontStyle:'bold',color:'#fff',wordWrap:{width:390}});
-    this.resourceText=this.add.text(182,552,'',{fontSize:'16px',color:'#eee6f4'});
-    this.actionInfo=this.add.text(182,591,'Selecciona una acción.',{fontSize:'12px',color:'#cfc4d8',wordWrap:{width:415},lineSpacing:2,maxLines:6});
-    this.buttons={move:this.actionButton(640,610,'move','MOVER','1 AP',()=>this.selectAction('move')),attack:this.actionButton(735,610,'attack','ATACAR','2 AP',()=>this.selectAction('attack')),skills:[],end:this.actionButton(1125,610,'end','TERMINAR','Turno',()=>{if(!this.autoBattle)this.endTurn();})};
-    [830,925,1020].forEach((x,i)=>this.buttons.skills.push(this.actionButton(x,610,'skill',`SKILL ${i+1}`,'Bloqueada',()=>this.selectSkill(i))));
+    this.hudBg=this.add.rectangle(640,635,1235,165,0x120d1b,.97).setStrokeStyle(3,0x786589);
+    this.portrait=this.add.image(92,635,'runePortrait').setDisplaySize(96,96);
+    this.nameText=this.add.text(155,568,'',{fontSize:'20px',fontStyle:'bold',color:'#fff',wordWrap:{width:390}});
+    this.resourceText=this.add.text(155,600,'',{fontSize:'16px',color:'#eee6f4'});
+    this.actionInfo=this.add.text(155,630,'Selecciona una acción.',{fontSize:'12px',color:'#cfc4d8',wordWrap:{width:415},lineSpacing:2,maxLines:6});
+    this.buttons={move:this.actionButton(640,635,'move','MOVER','1 AP',()=>this.selectAction('move')),attack:this.actionButton(735,635,'attack','ATACAR','2 AP',()=>this.selectAction('attack')),skills:[],end:this.actionButton(1125,635,'end','TERMINAR','Turno',()=>{if(!this.autoBattle)this.endTurn();})};
+    [830,925,1020].forEach((x,i)=>this.buttons.skills.push(this.actionButton(x,635,'skill',`SKILL ${i+1}`,'Bloqueada',()=>this.selectSkill(i))));
     this.hudObjects=[this.hudBg,this.portrait,this.nameText,this.resourceText,this.actionInfo];Object.values(this.buttons).flatMap(v=>Array.isArray(v)?v:[v]).flat().forEach(b=>{if(b?.bg)this.hudObjects.push(b.bg,b.icon,b.txt,b.ct);});
     this.turnPanel=this.add.container(12,68);this.statsContainer=null;
     this.autoButton=this.add.rectangle(1168,42,184,48,0x241a31,.96).setStrokeStyle(2,0xb896d1).setInteractive({useHandCursor:true});this.autoLabel=this.add.text(1168,42,'AUTO-BATTLE: NO',{fontSize:'15px',fontStyle:'bold',color:'#fff'}).setOrigin(.5);this.autoButton.on('pointerdown',()=>this.toggleAutoBattle());
     const relicBtn=makeButton(this,1010,42,120,42,'RELIQUIAS',()=>{this.scene.pause();this.scene.launch('Relics',{returnScene:'Battle'});});this.relicButton=relicBtn;
   }
-  actionButton(x,y,tex,label,cost,cb){const bg=this.add.rectangle(x,y,84,122,0x261b33,.97).setStrokeStyle(2,0x917aa9).setInteractive({useHandCursor:true}).on('pointerdown',cb);const icon=this.add.image(x,y-20,tex).setDisplaySize(52,52);const txt=this.add.text(x,y+24,label,{fontSize:'10px',fontStyle:'bold',color:'#fff',align:'center',wordWrap:{width:78}}).setOrigin(.5);const ct=this.add.text(x,y+47,cost,{fontSize:'10px',color:'#d1c5dd',align:'center',wordWrap:{width:78}}).setOrigin(.5);return{bg,icon,txt,ct};}
+  actionButton(x,y,tex,label,cost,cb){const bg=this.add.rectangle(x,y,84,110,0x261b33,.97).setStrokeStyle(2,0x917aa9).setInteractive({useHandCursor:true}).on('pointerdown',cb);const icon=this.add.image(x,y-20,tex).setDisplaySize(52,52);const txt=this.add.text(x,y+24,label,{fontSize:'10px',fontStyle:'bold',color:'#fff',align:'center',wordWrap:{width:78}}).setOrigin(.5);const ct=this.add.text(x,y+47,cost,{fontSize:'10px',color:'#d1c5dd',align:'center',wordWrap:{width:78}}).setOrigin(.5);return{bg,icon,txt,ct};}
   buildTurnQueue(){this.turnQueue=this.units.filter(u=>u.alive&&!u.isObstacle).sort((a,b)=>b.agi-a.agi||(a.team==='player'?-1:1));this.queueIndex=0;this.refreshTurnOrder();}
   refreshTurnOrder(){this.turnPanel.removeAll(true);this.turnQueue.filter(u=>u.alive).forEach((u,i)=>{const y=i*62,active=u===this.active;const aura=this.add.circle(48,y+30,active?29:25,u.team==='player'?0x32d46f:0xe34754,active?1:.65);const img=this.add.image(48,y+30,u.type).setDisplaySize(active?51:44,active?51:44).setFlipX(u.team==='enemy');const hp=this.add.text(78,y+22,`${Math.max(0,u.hp)}/${u.maxHp}`,{fontSize:'11px',color:'#fff'});this.turnPanel.add([aura,img,hp]);});}
   beginTurn(){
@@ -130,15 +135,15 @@ export class BattleScene extends Phaser.Scene{
   selectSkill(index){this.selectedSkillIndex=index;this.selectAction('skill');}
   selectAction(action){
     if(this.battleOver||this.actionLocked||!this.active||this.active.team!=='player'||this.autoBattle)return;this.clearHighlights();
-    if(action==='move'){if(this.active.ap<1)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='move';this.actionInfo.setText('Movimiento · 1 AP · Elige una casilla adyacente libre.');this.validMoves(this.active).forEach(p=>this.highlightCell(p.col,p.row,0x50dc84));return;}
-    if(action==='attack'){if(this.active.ap<2)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='attack';this.actionInfo.setText('Ataque básico · 2 AP · 1d3 + 1/2 FUE. Pulsa al objetivo frontal.');const t=this.frontTarget(this.active);if(t)this.highlightCell(t.col,t.row,0xff525f);else flashText(this,'No hay objetivo delante.',640,120,0xffbd69);return;}
+    if(action==='move'){if(this.active.ap<1)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='move';this.actionInfo.setText(`Movimiento · 1 AP · Alcance ${this.movementRange(this.active)} casillas. Elige una casilla verde.`);this.validMoves(this.active).forEach(p=>this.highlightCell(p.col,p.row,0x50dc84));return;}
+    if(action==='attack'){if(this.active.ap<2)return flashText(this,'No tienes AP suficiente.',640,120,0xff7777);this.action='attack';this.actionInfo.setText('Ataque básico · 2 AP · 1d3 + 1/2 FUE. Pulsa un enemigo adyacente.');const targets=this.adjacentEnemies(this.active);targets.forEach(t=>this.highlightCell(t.col,t.row,0xff525f));if(!targets.length)flashText(this,'No hay enemigos adyacentes.',640,120,0xffbd69);return;}
     const a=this.selectedAbility();if(!a)return flashText(this,'Habilidad no aprendida.',640,120,0xffbd69);if(this.active.ap<a.apCost||this.active.mp<this.abilityMpCost(this.active,a)||this.abilityCooldown(this.active,a)>0)return flashText(this,'No tienes AP o MP suficiente.',640,120,0xff7777);
     this.action='skill';this.actionInfo.setText(`[${a.rarity}] ${a.name} · ${a.apCost} AP · ${a.mpCost} MP\n${a.description}`);
     if(a.targetMode==='self')this.actionInfo.setText(`[${a.rarity}] ${a.name} · ${a.apCost} AP · ${a.mpCost} MP\n${a.description}\nPulsa sobre la unidad activa para confirmar.`);
     const cells=this.skillCells(this.active,a);cells.forEach(p=>this.highlightCell(p.col,p.row,0x5ba9ff));if(!cells.length)flashText(this,'No hay objetivos válidos.',640,120,0xffbd69);
   }
-  onCell(col,row){if(this.battleOver||this.actionLocked||!this.active||this.active.team!=='player'||this.autoBattle)return;if(this.action==='move'&&this.validMoves(this.active).some(p=>p.col===col&&p.row===row))this.moveUnit(this.active,col,row,()=>{this.active.ap--;this.afterAction();});else if(this.action==='attack'){const t=this.unitAt(col,row);if(t)this.tryAttackTarget(t);}else if(this.action==='skill')this.trySkillCell(col,row);}
-  tryAttackTarget(target){if(target!==this.frontTarget(this.active)||target.team===this.active.team)return flashText(this,'Solo puedes atacar al objetivo frontal.',640,120,0xffbd69);this.breakStealth(this.active);this.basicAttack(this.active,target,()=>{this.active.ap-=BALANCE.basicAttackCost;this.afterAction();this.checkEnd();});}
+  onCell(col,row){if(this.battleOver||this.actionLocked||!this.active||this.active.team!=='player'||this.autoBattle)return;if(this.action==='move'){const move=this.validMoves(this.active).find(p=>p.col===col&&p.row===row);if(move)this.moveUnit(this.active,col,row,()=>{this.active.ap--;this.afterAction();},move.path);}else if(this.action==='attack'){const t=this.unitAt(col,row);if(t)this.tryAttackTarget(t);}else if(this.action==='skill')this.trySkillCell(col,row);}
+  tryAttackTarget(target){if(!this.isAdjacent(this.active,target)||target.team===this.active.team)return flashText(this,'Solo puedes atacar a un enemigo adyacente.',640,120,0xffbd69);this.breakStealth(this.active);this.basicAttack(this.active,target,()=>{this.active.ap-=BALANCE.basicAttackCost;this.afterAction();this.checkEnd();});}
   bonusDamage(u){return u.buffs.some(b=>b.id==='fireDamage')?rollDie(4):0;}
   basicAttack(attacker,target,done){let damage=Math.max(1,rollDie(3)+Math.floor(attacker.str/2)-Math.floor(target.df/3))+this.bonusDamage(attacker);this.dealDamage(attacker,target,damage,'hit',done);}
   skillCells(u,a){
@@ -182,11 +187,37 @@ export class BattleScene extends Phaser.Scene{
   applyInstantDamage(attacker,target,damage,fx){if(target.buffs.some(b=>b.id==='wateryDodge')){target.buffs=target.buffs.filter(b=>b.id!=='wateryDodge');return;}target.hp-=damage;this.damageSerial++;this.spawnFx(target,fx);floatNumber(this,`-${damage}`,target.sprite.x,target.sprite.y-62,0xff626f);this.updateUnitHp(target);if(target.hp<=0)this.killUnit(target);this.afterDamage(attacker,target,damage);}
   afterDamage(attacker,target,damage){if(attacker?.buffs?.some(b=>b.id==='lifesteal'))this.heal(attacker,Math.max(1,Math.floor(damage*.5)));this.checkBerserker(target);}
   heal(u,amount){const actual=Math.min(amount,u.maxHp-u.hp);u.hp+=actual;this.spawnFx(u,'heal');floatNumber(this,`+${actual}`,u.sprite.x,u.sprite.y-62,0x71ef91);this.updateUnitHp(u);}
-  playHit(attacker,target,damage,fxKey,done){if(!attacker)return this.applyInstantDamage(null,target,damage,fxKey);const dir=attacker.team==='player'?1:-1,ox=attacker.sprite.x;this.tweens.add({targets:attacker.sprite,x:ox+dir*22,duration:90,yoyo:true,onComplete:()=>{target.hp-=damage;this.damageSerial++;this.spawnFx(target,fxKey);floatNumber(this,`-${damage}`,target.sprite.x,target.sprite.y-62,0xff626f);this.updateUnitHp(target);if(target.hp<=0)this.killUnit(target);done?.();}});}
+  playHit(attacker,target,damage,fxKey,done){if(!attacker)return this.applyInstantDamage(null,target,damage,fxKey);const dx=Math.sign(target.col-attacker.col),dy=Math.sign(target.row-attacker.row),ox=attacker.sprite.x,oy=attacker.sprite.y;this.tweens.add({targets:attacker.sprite,x:ox+dx*16,y:oy+dy*16,duration:90,yoyo:true,onComplete:()=>{target.hp-=damage;this.damageSerial++;this.spawnFx(target,fxKey);floatNumber(this,`-${damage}`,target.sprite.x,target.sprite.y-62,0xff626f);this.updateUnitHp(target);if(target.hp<=0)this.killUnit(target);done?.();}});}
   spawnFx(target,key){const fx=this.add.image(target.sprite.x,target.sprite.y,key).setDisplaySize(110,110).setAlpha(.95);this.tweens.add({targets:fx,alpha:0,scale:1.4,duration:300,onComplete:()=>fx.destroy()});}
-  validMoves(u){if(u.buffs?.some(b=>b.id==='immobilized'))return[];return[[u.col+1,u.row],[u.col-1,u.row],[u.col,u.row+1],[u.col,u.row-1]].filter(([c,r])=>c>=0&&c<GAME.cols&&r>=0&&r<GAME.rows&&!this.unitAt(c,r)).map(([col,row])=>({col,row}));}
-  frontTarget(u){return this.unitAt(u.col+(u.team==='player'?1:-1),u.row);}
-  moveUnit(u,col,row,done){this.actionLocked=true;u.col=col;u.row=row;const{x,y}=this.cellCenter(col,row);this.tweens.add({targets:[u.sprite,u.hpBack,u.hpBar,u.arrow],x:{value:x},duration:220,onUpdate:()=>{u.hpBack.x=u.sprite.x;u.hpBar.x=u.sprite.x-37;u.arrow.x=u.sprite.x;},onComplete:()=>{u.sprite.y=y;u.hpBack.y=y-48;u.hpBar.y=y-48;u.arrow.y=y+48;this.actionLocked=false;done?.();}});}
+  movementRange(u){return Phaser.Math.Clamp(2+Math.floor(Math.max(0,u.agi)/3),2,7);}
+  validMoves(u){
+    if(u.buffs?.some(b=>b.id==='immobilized'))return[];
+    const max=this.movementRange(u),key=(c,r)=>`${c},${r}`,queue=[{col:u.col,row:u.row,d:0,path:[]}],seen=new Set([key(u.col,u.row)]),out=[];
+    while(queue.length){
+      const cur=queue.shift();
+      if(cur.d>=max)continue;
+      for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const col=cur.col+dc,row=cur.row+dr,k=key(col,row);
+        if(col<0||col>=GAME.cols||row<0||row>=GAME.rows||seen.has(k)||this.unitAt(col,row))continue;
+        const next={col,row,d:cur.d+1,path:[...cur.path,{col,row}]};seen.add(k);queue.push(next);out.push(next);
+      }
+    }
+    return out;
+  }
+  isAdjacent(a,b){return !!a&&!!b&&Math.abs(a.col-b.col)+Math.abs(a.row-b.row)===1;}
+  adjacentEnemies(u){return this.units.filter(t=>t.alive&&t.team!==u.team&&!t.isObstacle&&this.isAdjacent(u,t));}
+  frontTarget(u){return this.adjacentEnemies(u)[0]||null;}
+  moveUnit(u,col,row,done,path=null){
+    this.actionLocked=true;
+    const route=path||this.validMoves(u).find(p=>p.col===col&&p.row===row)?.path||[{col,row}];
+    const steps=route.length?route:[{col,row}];
+    let index=0;
+    const advance=()=>{
+      const step=steps[index++],pos=this.cellCenter(step.col,step.row);
+      this.tweens.add({targets:[u.sprite,u.hpBack,u.hpBar,u.arrow],x:{value:pos.x},y:{value:pos.y},duration:Math.max(70,150-Math.min(steps.length,6)*8),onUpdate:()=>{u.hpBack.x=u.sprite.x;u.hpBack.y=u.sprite.y-27;u.hpBar.x=u.sprite.x-20;u.hpBar.y=u.sprite.y-27;u.arrow.x=u.sprite.x;u.arrow.y=u.sprite.y+27;},onComplete:()=>{u.col=step.col;u.row=step.row;if(index<steps.length)advance();else{this.actionLocked=false;done?.();}}});
+    };
+    advance();
+  }
   endTurn(){if(this.battleOver||!this.active||this.actionLocked)return;if(this.active.paralyzedTurns>0)this.active.paralyzedTurns--;this.tickBuffs(this.active);this.handleStalemateTurn(this.active);this.action='none';this.clearHighlights();this.queueIndex++;this.time.delayedCall(180,()=>this.beginTurn());}
   tickBuffs(u){
     u.buffs.forEach(b=>{if(b.justApplied)b.justApplied=false;else b.remaining--;});
@@ -212,7 +243,7 @@ export class BattleScene extends Phaser.Scene{
         return this.time.delayedCall(180,loop);
       }
       if(front&&front.team===enemyTeam&&u.ap>=2)return this.basicAttack(u,front,()=>{u.ap-=2;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});
-      const move=chooseMove(this,u,enemyTeam);if(u.ap>=1&&move&&move.score>0)return this.moveUnit(u,move.col,move.row,()=>{u.ap--;this.log.add('ai_move',`${u.name} se mueve`,{unit:u.id,profile:u.aiProfile,to:{col:move.col,row:move.row},score:move.score});this.updateHud();this.time.delayedCall(150,loop);});this.endTurn();};loop();}
+      const move=chooseMove(this,u,enemyTeam);if(u.ap>=1&&move&&move.score>0)return this.moveUnit(u,move.col,move.row,()=>{u.ap--;this.log.add('ai_move',`${u.name} se mueve`,{unit:u.id,profile:u.aiProfile,to:{col:move.col,row:move.row},score:move.score});this.updateHud();this.time.delayedCall(150,loop);},move.path);this.endTurn();};loop();}
   bestAbilityAction(u,enemyTeam){return chooseAbilityAction(this,u,enemyTeam);}
   aiUseAbility(){return false;}
   setHudVisible(visible){this.hudObjects?.forEach(o=>o.setVisible(visible));}
@@ -258,15 +289,15 @@ export class BattleScene extends Phaser.Scene{
     flashText(this,'Derrota: tercer bloqueo consecutivo',640,150,0xff6571);
     this.time.delayedCall(700,()=>this.showDefeat());
   }
-  repositionTeams(){for(const team of ['player','enemy']){const units=this.units.filter(u=>u.alive&&u.team===team&&!u.isObstacle);const cols=team==='player'?[0,1,2]:[5,4,3];const slots=[];for(const c of cols)for(let r=0;r<3;r++)slots.push({col:c,row:r});units.forEach((u,i)=>{const spot=slots.find(p=>!this.unitAt(p.col,p.row)||this.unitAt(p.col,p.row)===u);if(spot)this.moveUnit(u,spot.col,spot.row);});}}
+  repositionTeams(){for(const team of ['player','enemy']){const units=this.units.filter(u=>u.alive&&u.team===team&&!u.isObstacle);const cols=team==='player'?[0,1,2]:[9,8,7];const slots=[];for(const c of cols)for(let r=3;r<6;r++)slots.push({col:c,row:r});units.forEach((u)=>{const spot=slots.find(p=>!this.unitAt(p.col,p.row)||this.unitAt(p.col,p.row)===u);if(spot)this.moveUnit(u,spot.col,spot.row);});}}
   resolveByHp(){const hp=team=>this.units.filter(u=>u.alive&&u.team===team&&!u.isObstacle).reduce((n,u)=>n+Math.max(0,u.hp),0);const p=hp('player'),e=hp('enemy');this.battleOver=true;flashText(this,`Desempate por HP: ${p} - ${e}`,640,150,0xffe596);this.time.delayedCall(700,()=>p>=e?this.showVictory():this.showDefeat());}
   showStats(u){
-    this.statsContainer?.destroy(true);const cls=CLASSES[u.type],c=this.add.container(790,24).setDepth(40);this.statsContainer=c;const panel=this.add.rectangle(0,0,470,690,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);const title=this.add.text(20,17,u.name,{fontSize:'22px',fontStyle:'bold',color:'#fff'});const subtitle=this.add.text(20,54,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});const close=this.add.text(420,12,'✕',{fontSize:'30px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});const portraitKey=ENEMIES[u.type]?.portrait||(u.type==='zombie'?'zombiePortrait':cls?.portrait||'zombiePortrait');const portrait=this.add.image(91,159,portraitKey).setDisplaySize(120,120);const combat=this.add.text(175,101,[`HP ${Math.max(0,u.hp)}/${u.maxHp}`,`MP ${u.mp}/${u.maxMp}`,`AP ${u.ap}/${u.maxAp}`,`DF ${u.df}`,`FUE ${u.str}`,`INT ${u.int}`,`AGI ${u.agi}`].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:5});c.add([panel,title,subtitle,close,portrait,combat]);
+    this.statsContainer?.destroy(true);const cls=CLASSES[u.type],c=this.add.container(790,24).setDepth(40);this.statsContainer=c;const panel=this.add.rectangle(0,0,470,690,0x100b18,.98).setOrigin(0).setStrokeStyle(3,u.team==='player'?0x48d47a:0xe7505d);const title=this.add.text(20,17,u.name,{fontSize:'22px',fontStyle:'bold',color:'#fff'});const subtitle=this.add.text(20,54,`Nivel ${u.level} · ${u.team==='player'?'Aliado':'Enemigo'}`,{fontSize:'16px',color:'#d8ccdf'});const close=this.add.text(420,12,'✕',{fontSize:'30px',color:'#fff'}).setInteractive({useHandCursor:true}).on('pointerdown',()=>{c.destroy(true);this.statsContainer=null;});const portraitKey=ENEMIES[u.type]?.portrait||(u.type==='zombie'?'zombiePortrait':cls?.portrait||'zombiePortrait');const portrait=this.add.image(91,159,portraitKey).setDisplaySize(120,120);const combat=this.add.text(175,101,[`HP ${Math.max(0,u.hp)}/${u.maxHp}`,`MP ${u.mp}/${u.maxMp}`,`AP ${u.ap}/${u.maxAp}`,`DF ${u.df}`,`FUE ${u.str}`,`INT ${u.int}`,`AGI ${u.agi}`,`MOV ${this.movementRange(u)}`].join('\n'),{fontSize:'16px',color:'#eee6f4',lineSpacing:5});c.add([panel,title,subtitle,close,portrait,combat]);
     let statsY=300;if(u.blessing){const bd=BLESSINGS[u.blessing],bi=this.add.image(80,340,bd.texture).setDisplaySize(90,90),bn=this.add.text(145,312,`${u.blessing}\n+${u.blessingBonus} ${bd.statLabel}`,{fontSize:'18px',fontStyle:'bold',color:'#fff',lineSpacing:5});c.add([bi,bn]);statsY=430;}
     const stats=this.add.text(20,statsY,[`Constitución: ${u.constitution}     Energía: ${u.energy}`,`Carisma: ${u.charisma}             Voluntad: ${u.will}`,`Sigilo: ${u.stealth}%              Percepción: ${u.perception}`].join('\n'),{fontSize:'15px',color:'#d1c5dc',lineSpacing:18});c.add(stats);
     const statuses=[...(u.paralyzedTurns>0?[{id:'paralyzed',remaining:u.paralyzedTurns}]:[]),...u.buffs.filter(b=>STATUS_TEXTURES[b.id])];const sy=statsY+125;const stitle=this.add.text(20,sy,'ESTADOS ACTIVOS',{fontSize:'14px',fontStyle:'bold',color:'#ffe69a'});c.add(stitle);if(!statuses.length)c.add(this.add.text(20,sy+30,'Ninguno',{fontSize:'14px',color:'#aaa0b1'}));statuses.slice(0,8).forEach((s,i)=>{const x=48+(i%4)*105,y=sy+62+Math.floor(i/4)*65;c.add(this.add.image(x,y,STATUS_TEXTURES[s.id]).setDisplaySize(42,42));c.add(this.add.text(x+27,y-12,`${s.remaining>=900?'∞':s.remaining}t`,{fontSize:'11px',color:'#fff'}));});
   }
-  updateUnitHp(u){const ratio=Phaser.Math.Clamp(u.hp/u.maxHp,0,1);u.hpBar.width=74*ratio;u.hpBar.fillColor=ratio>.5?0x42d36e:ratio>.25?0xf3bf4d:0xe54452;}
+  updateUnitHp(u){const ratio=Phaser.Math.Clamp(u.hp/u.maxHp,0,1);u.hpBar.width=40*ratio;u.hpBar.fillColor=ratio>.5?0x42d36e:ratio>.25?0xf3bf4d:0xe54452;}
   killUnit(u){
     if(!u.alive)return;
     u.alive=false;
@@ -282,9 +313,9 @@ export class BattleScene extends Phaser.Scene{
       this.refreshTurnOrder();
     }});
   }
-  clearHighlights(){this.cells.forEach(c=>c.rect.setFillStyle(c.c<3?0x286946:0x7b303a,.30));}
+  clearHighlights(){this.cells.forEach(c=>c.rect.setFillStyle(c.baseColor??0x272030,(c.baseColor===0x272030)?0.22:0.30));}
   highlightCell(col,row,color){this.cells.find(c=>c.c===col&&c.r===row)?.rect.setFillStyle(color,.68);}
-  cellCenter(col,row){return{x:GAME.gridX+col*GAME.tile+GAME.tile/2,y:GAME.gridY+row*GAME.tile+GAME.tile/2};}
+  cellCenter(col,row){return{x:GAME.gridX+col*GAME.tile+GAME.tile/2,y:(this.gridY??GAME.gridY)+row*GAME.tile+GAME.tile/2};}
   unitAt(col,row){return this.units.find(u=>u.alive&&u.col===col&&u.row===row);}
   checkEnd(){const players=this.units.some(u=>u.alive&&u.team==='player'&&!u.isSummon),enemies=this.units.some(u=>u.alive&&u.team==='enemy'&&!u.isSummon);if(players&&enemies)return false;this.battleOver=true;this.log.add('battle_end',players?'Victoria del jugador':'Derrota del jugador',{round:SAVE.round});this.clearHighlights();this.time.delayedCall(450,()=>players?this.showVictory():this.showDefeat());return true;}
   showVictory(){

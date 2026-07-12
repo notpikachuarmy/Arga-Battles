@@ -1,11 +1,13 @@
 export const GAME = {
   width: 1280,
   height: 720,
-  tile: 96,
-  cols: 6,
-  rows: 3,
-  gridX: 352,
-  gridY: 194,
+  tile: 50,
+  cols: 10,
+  rows: 10,
+  gridX: 365,
+  gridY: 45,
+  placementGridY: 110,
+  deploymentSize: 3,
   maxLevel: 10,
   apPerTurn: 3,
   abilityLevels: [1, 5, 10]

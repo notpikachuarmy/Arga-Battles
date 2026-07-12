@@ -13,19 +13,24 @@ export class PlacementScene extends Phaser.Scene{
   init(data){this.nodeType=data?.nodeType||SAVE.pendingNodeType||'combat';this.difficulty=data?.difficulty||{score:1};}
 
   create(){
-    const {width:W,height:H,tile:T,cols,rows,gridX,gridY}=GAME;
+    const {width:W,height:H,tile:T,cols,rows,gridX}=GAME;
+    const gridY=GAME.placementGridY;
     this.add.image(W/2,H/2,'battleBg').setDisplaySize(W,H);
     this.add.rectangle(W/2,H/2,W,H,0x090611,.22);
-    this.add.text(42,24,`MAPA ${SAVE.mapNumber} · NODO ${SAVE.visitedNodes.length+1} · VIDAS ${SAVE.lives}`,{fontSize:'34px',fontStyle:'bold',color:'#fff'});
-    this.add.text(W/2,42,`ELIGE Y COLOCA ${hasRelic(SAVE,'artOfWar')?4:3} UNIDADES`,{fontSize:'27px',fontStyle:'bold',color:'#fff',stroke:'#21182d',strokeThickness:5}).setOrigin(.5);
+    this.add.text(42,24,`MAPA ${SAVE.mapNumber} · NODO ${SAVE.visitedNodes.length+1} · VIDAS ${SAVE.lives}`,{fontSize:'26px',fontStyle:'bold',color:'#fff'});
+    this.add.text(W/2,40,`ELIGE Y COLOCA ${hasRelic(SAVE,'artOfWar')?4:3} UNIDADES`,{fontSize:'22px',fontStyle:'bold',color:'#fff',stroke:'#21182d',strokeThickness:5}).setOrigin(.5);
 
     this.cells=[];
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
       const x=gridX+c*T+T/2,y=gridY+r*T+T/2;
-      const rect=this.add.rectangle(x,y,T-4,T-4,c<3?0x377c54:0x8b3941,.33)
-        .setStrokeStyle(2,c===2?0x9bf5bc:c===3?0xffa0a8:0xd2c5e4,.72);
-      this.cells.push({c,r,x,y,rect});
-      if(c<3)rect.setInteractive({useHandCursor:true}).on('pointerdown',()=>this.placeAt(c,r));
+      const playerZone=c<GAME.deploymentSize&&r>=3&&r<3+GAME.deploymentSize;
+      const enemyZone=c>=cols-GAME.deploymentSize&&r>=3&&r<3+GAME.deploymentSize;
+      const fill=playerZone?0x377c54:enemyZone?0x8b3941:0x272030;
+      const stroke=playerZone?0x9bf5bc:enemyZone?0xffa0a8:0x756b82;
+      const rect=this.add.rectangle(x,y,T-3,T-3,fill,(playerZone||enemyZone)?0.38:0.22)
+        .setStrokeStyle(playerZone||enemyZone?2:1,stroke,.72);
+      this.cells.push({c,r,x,y,rect,playerZone,enemyZone});
+      if(playerZone)rect.setInteractive({useHandCursor:true}).on('pointerdown',()=>this.placeAt(c,r));
     }
 
     if(!SAVE.playerRoster.length)SAVE.playerRoster=randomTeam();
@@ -214,7 +219,7 @@ export class PlacementScene extends Phaser.Scene{
     const current=this.deployedCost()-(u.col!==null?soldierCost(u.recruit):0);
     if(current+soldierCost(u.recruit)>SAVE.soldierPoints){flashText(this,'No tienes suficiente margen de Puntos de Soldado.',GAME.width/2,120,0xff7777);return;}
     u.sprite?.destroy();u.col=c;u.row=r;
-    u.sprite=this.add.image(GAME.gridX+c*GAME.tile+GAME.tile/2,GAME.gridY+r*GAME.tile+GAME.tile/2,u.type).setDisplaySize(82,82);
+    u.sprite=this.add.image(GAME.gridX+c*GAME.tile+GAME.tile/2,GAME.placementGridY+r*GAME.tile+GAME.tile/2,u.type).setDisplaySize(44,44);
     this.refreshReady();
   }
 
@@ -226,7 +231,7 @@ export class PlacementScene extends Phaser.Scene{
   createEnemyPreview(){
     const isBoss=this.nodeType==='boss';
     const count=isBoss?Math.min(5,this.maxDeploy()+1):this.maxDeploy();
-    const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,count);
+    const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:GAME.cols-GAME.deploymentSize+(i%3),row:3+Math.floor(i/3)}))).slice(0,count);
     const exclusiveChance=isBoss?.35:.72;
     this.enemyPositions=Array.from({length:count},(_,i)=>{
       if(Math.random()<exclusiveChance){
@@ -236,7 +241,7 @@ export class PlacementScene extends Phaser.Scene{
       const recruit=randomTeam()[0];
       return {type:recruit.type,texture:recruit.type,name:isBoss&&i===0?`Guardián ${CLASSES[recruit.type].name}`:null,aiProfile:isBoss&&i===0?'boss':({rune:'balanced',formless:'flanker',demon:'aggressive'}[recruit.type]||'balanced'),level:isBoss&&i===0?3:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]};
     });
-    this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.gridY+p.row*GAME.tile+GAME.tile/2,p.texture||p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
+    this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.placementGridY+p.row*GAME.tile+GAME.tile/2,p.texture||p.type).setDisplaySize(44,44).setFlipX(true).setTint(0xffd6d8));
     this.refreshPoints();
   }
 

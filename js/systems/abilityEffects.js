@@ -1,3 +1,4 @@
+import { GAME } from '../config.js';
 import { rollDie } from '../utils/dice.js';
 import { flashText } from '../utils/helpers.js';
 
@@ -100,12 +101,12 @@ const handlers={
     dead.alive=true;
     dead.hp=Math.max(1,Math.ceil(dead.maxHp*data.hpRatio));
     if(occupant){
-      const free=scene.cells.find(c=>(u.team==='player'?c.c<3:c.c>=3)&&!scene.unitAt(c.c,c.r));
+      const free=scene.cells.find(c=>(u.team==='player'?c.c<GAME.deploymentSize:c.c>=GAME.cols-GAME.deploymentSize)&&c.r>=3&&c.r<3+GAME.deploymentSize&&!scene.unitAt(c.c,c.r));
       if(free){dead.col=free.c;dead.row=free.r;}
     }
     const pos=scene.cellCenter(dead.col,dead.row);
     [dead.sprite,dead.hpBack,dead.hpBar,dead.arrow].forEach(x=>x.setVisible(true).setAlpha(1));
-    dead.sprite.setPosition(pos.x,pos.y);dead.hpBack.setPosition(pos.x,pos.y-48);dead.hpBar.setPosition(pos.x-37,pos.y-48);dead.arrow.setPosition(pos.x,pos.y+48);
+    dead.sprite.setPosition(pos.x,pos.y);dead.hpBack.setPosition(pos.x,pos.y-27);dead.hpBar.setPosition(pos.x-20,pos.y-27);dead.arrow.setPosition(pos.x,pos.y+27);
     scene.updateUnitHp(dead);scene.buildTurnQueue();scene.payAbility(u,a,data.apRefund||0);
     return true;
   },
