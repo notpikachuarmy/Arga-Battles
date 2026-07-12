@@ -23,8 +23,10 @@ export function validateGameData(data=DATA){
   const checkMap=(name,map)=>{
     if(!map||typeof map!=='object'||Array.isArray(map))issues.push(issue('error','INVALID_COLLECTION',`${name} debe ser un objeto.`));
     else for(const [key,value] of Object.entries(map)){
-      if(!value||typeof value!=='object')issues.push(issue('error','INVALID_ENTRY',`${name}.${key} no es un objeto.`));
-      if(value?.id&&value.id!==key)issues.push(issue('warning','ID_KEY_MISMATCH',`${name}.${key} declara id ${value.id}.`,{collection:name,key}));
+      // El registro de assets usa rutas de archivo como valores; el resto de colecciones usa objetos data-driven.
+      const validAsset=name==='assets'&&typeof value==='string'&&value.length>0;
+      if(!validAsset&&(!value||typeof value!=='object'||Array.isArray(value)))issues.push(issue('error','INVALID_ENTRY',`${name}.${key} no es una entrada válida.`));
+      if(!validAsset&&value?.id&&value.id!==key)issues.push(issue('warning','ID_KEY_MISMATCH',`${name}.${key} declara id ${value.id}.`,{collection:name,key}));
     }
   };
   for(const name of ['classes','abilities','relics','blessings','enemies','bosses','statuses','summons','aiProfiles','assets'])checkMap(name,data[name]);
