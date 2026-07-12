@@ -17,12 +17,13 @@ import { calculateDifficulty } from '../systems/difficulty.js';
 const STALEMATE_TURN_LIMIT=15;
 
 const STATUS_TEXTURES={
-  paralyzed:'paralyzed',immobilized:'immobilized',bleeding:'bleeding',bloodThorns:'strengthUp',fireDamage:'fireDamageUp',adaptiveResistance:'adaptiveResistanceStatus',wateryDodge:'wateryDodgeStatus',miniaturized:'miniaturized',maximized:'maximized',transformed:'transformed',stealth:'stealth',poison:'poisoned',bloodThirst:'bloodThirstStatus',crimsonPact:'crimsonPactStatus',lifesteal:'lifesteal'
+  paralyzed:'paralyzed',immobilized:'immobilized',bleeding:'bleeding',bloodThorns:'strengthUp',fireDamage:'fireDamageUp',adaptiveResistance:'adaptiveResistanceStatus',wateryDodge:'wateryDodgeStatus',miniaturized:'miniaturized',maximized:'maximized',transformed:'transformed',stealth:'stealth',poison:'poisoned',bloodThirst:'bloodThirstStatus',crimsonPact:'crimsonPactStatus',lifesteal:'lifesteal',enemyFrenzy:'enemyFrenzy',enemyMutation:'enemyMutation',regeneration:'regeneration'
 };
 
 export class BattleScene extends Phaser.Scene{
   constructor(){super('Battle');}
   init(data){this.startPositions=data.positions;this.enemyPositions=data.enemyPositions||[];this.enemyRelics=data.enemyRelics||SAVE.enemyRelics||[];}
+  textureForUnit(u){return u?.isObstacle?'earthWall':(u?.textureKey||ENEMIES[u?.type]?.texture||u?.type||'placeholder');}
   create(){
     const {width:W,height:H,tile:T,cols,rows,gridX}=GAME;
     const gridY=GAME.gridY;
@@ -74,12 +75,12 @@ export class BattleScene extends Phaser.Scene{
       if(level>=5&&known.length<2&&available().length)known.push(Phaser.Utils.Array.GetRandom(available()));
       if(level>=10&&known.length<3&&available().length)known.push(Phaser.Utils.Array.GetRandom(available()));
     }
-    const u={id:this.nextId++,recruitId,type,team,col,row,level,name:options.name||cls?.name||enemyDef?.name||SUMMONS[type]?.name||'Unidad',aiProfile:options.aiProfile||enemyDef?.aiProfile||SUMMONS[type]?.aiProfile||(team==='enemy'?({rune:'balanced',formless:'flanker',demon:'aggressive'}[type]||'balanced'):'balanced'),blessing:blessing||cls?.defaultBlessing||null,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:known,buffs:[],paralyzedTurns:0,turnsTaken:0,blessingBonus:0,isSummon:!!options.isSummon,isObstacle:!!options.isObstacle,resurrectionUsed:false,copiedAbility:null,ownerId:options.ownerId??null,persistentSummon:!!options.persistentSummon,cooldowns:{},echoUsed:false,berserkerActive:false,resistances:{...(enemyDef?.resistances||{})},enemyReward:enemyDef?.reward||null,size:enemyDef?.size||1};
+    const u={id:this.nextId++,recruitId,type,team,col,row,level,name:options.name||cls?.name||enemyDef?.name||SUMMONS[type]?.name||'Unidad',aiProfile:options.aiProfile||enemyDef?.aiProfile||SUMMONS[type]?.aiProfile||(team==='enemy'?({rune:'balanced',formless:'flanker',demon:'aggressive'}[type]||'balanced'):'balanced'),blessing:blessing||cls?.defaultBlessing||null,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:known,buffs:[],paralyzedTurns:0,turnsTaken:0,blessingBonus:0,isSummon:!!options.isSummon,isObstacle:!!options.isObstacle,resurrectionUsed:false,copiedAbility:null,ownerId:options.ownerId??null,persistentSummon:!!options.persistentSummon,cooldowns:{},echoUsed:false,berserkerActive:false,resistances:{...(enemyDef?.resistances||{})},enemyReward:enemyDef?.reward||null,size:enemyDef?.size||1,textureKey:options.texture||enemyDef?.texture||(type==='enemy_zombie'?'zombie':type)};
     this.units.push(u);return u;
   }
   drawUnit(u){
     const {x,y}=this.cellCenter(u.col,u.row);
-    const texture=u.isObstacle?'earthWall':(ENEMIES[u.type]?.texture||u.type);
+    const texture=this.textureForUnit(u);
     u.sprite=this.add.image(x,y,texture)
       .setDisplaySize(u.isObstacle?46:(u.size>1?48:42),u.isObstacle?46:(u.size>1?48:42))
       .setFlipX(u.team==='enemy'&&!u.isObstacle)
@@ -118,7 +119,7 @@ export class BattleScene extends Phaser.Scene{
   }
   actionButton(x,y,tex,label,cost,cb){const bg=this.add.rectangle(x,y,84,110,0x261b33,.97).setStrokeStyle(2,0x917aa9).setInteractive({useHandCursor:true}).on('pointerdown',cb);const icon=this.add.image(x,y-20,tex).setDisplaySize(52,52);const txt=this.add.text(x,y+24,label,{fontSize:'10px',fontStyle:'bold',color:'#fff',align:'center',wordWrap:{width:78}}).setOrigin(.5);const ct=this.add.text(x,y+47,cost,{fontSize:'10px',color:'#d1c5dd',align:'center',wordWrap:{width:78}}).setOrigin(.5);return{bg,icon,txt,ct};}
   buildTurnQueue(){this.turnQueue=this.units.filter(u=>u.alive&&!u.isObstacle).sort((a,b)=>b.agi-a.agi||(a.team==='player'?-1:1));this.queueIndex=0;this.refreshTurnOrder();}
-  refreshTurnOrder(){this.turnPanel.removeAll(true);this.turnQueue.filter(u=>u.alive).forEach((u,i)=>{const y=i*62,active=u===this.active;const aura=this.add.circle(48,y+30,active?29:25,u.team==='player'?0x32d46f:0xe34754,active?1:.65);const img=this.add.image(48,y+30,u.type).setDisplaySize(active?51:44,active?51:44).setFlipX(u.team==='enemy');const hp=this.add.text(78,y+22,`${Math.max(0,u.hp)}/${u.maxHp}`,{fontSize:'11px',color:'#fff'});this.turnPanel.add([aura,img,hp]);});}
+  refreshTurnOrder(){this.turnPanel.removeAll(true);this.turnQueue.filter(u=>u.alive).forEach((u,i)=>{const y=i*62,active=u===this.active;const aura=this.add.circle(48,y+30,active?29:25,u.team==='player'?0x32d46f:0xe34754,active?1:.65);const img=this.add.image(48,y+30,this.textureForUnit(u)).setDisplaySize(active?51:44,active?51:44).setFlipX(u.team==='enemy');const hp=this.add.text(78,y+22,`${Math.max(0,u.hp)}/${u.maxHp}`,{fontSize:'11px',color:'#fff'});this.turnPanel.add([aura,img,hp]);});}
   beginTurn(){
     if(this.battleOver)return;this.clearHighlights();this.action='none';while(this.queueIndex<this.turnQueue.length&&!this.turnQueue[this.queueIndex].alive)this.queueIndex++;if(this.queueIndex>=this.turnQueue.length)this.buildTurnQueue();this.active=this.turnQueue[this.queueIndex];if(!this.active)return;
     this.active.ap=this.active.maxAp;this.active.turnsTaken++;this.active.usedAbilitiesThisTurn=[];this.abilitiesFor(this.active).forEach(a=>delete a._aiBlocked);this.selectedSkillIndex=0;this.active.damageAtTurnStart=this.damageSerial;
@@ -222,7 +223,7 @@ export class BattleScene extends Phaser.Scene{
   tickBuffs(u){
     u.buffs.forEach(b=>{if(b.justApplied)b.justApplied=false;else b.remaining--;});
     const expired=u.buffs.filter(b=>b.remaining<=0);
-    expired.forEach(b=>{for(const k of ['str','df','agi','stealth'])if(b[k])u[k]-=b[k];if(b.scale)u.sprite.setScale(1);if(b.id==='transformed'&&b.original){Object.assign(u,b.original);u.learnedAbilities=[...b.original.learnedAbilities];u.sprite.setTexture(u.type);}if(b.id==='copiedAbility')u.copiedAbility=null;});
+    expired.forEach(b=>{for(const k of ['str','df','agi','stealth'])if(b[k])u[k]-=b[k];if(b.scale)u.sprite.setScale(1);if(b.id==='transformed'&&b.original){Object.assign(u,b.original);u.learnedAbilities=[...b.original.learnedAbilities];u.sprite.setTexture(this.textureForUnit(u));}if(b.id==='copiedAbility')u.copiedAbility=null;});
     u.buffs=u.buffs.filter(b=>b.remaining>0);
   }
   toggleAutoBattle(){if(this.battleOver)return;this.autoBattle=!this.autoBattle;this.autoLabel.setText(`AUTO-BATTLE: ${this.autoBattle?'SÍ':'NO'}`);this.autoButton.setFillStyle(this.autoBattle?0x285f3c:0x241a31,.96);if(this.autoBattle&&this.active?.team==='player')this.time.delayedCall(150,()=>this.runAIControlled(this.active));}

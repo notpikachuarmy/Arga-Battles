@@ -1,14 +1,104 @@
 {
-  "paralyzed":{"id":"paralyzed","name":"Paralizado","texture":"paralyzed","negative":true},
-  "poison":{"id":"poison","name":"Envenenado","texture":"poisoned","negative":true},
-  "stealth":{"id":"stealth","name":"Sigilo","texture":"stealth","negative":false},
-  "fireDamage":{"id":"fireDamage","name":"Fuego perecedero","texture":"fireDamageUp","negative":false},
-  "adaptiveResistance":{"id":"adaptiveResistance","name":"Resistencia adaptada","texture":"adaptiveResistanceStatus","negative":false},
-  "wateryDodge":{"id":"wateryDodge","name":"Esquiva acuosa","texture":"wateryDodgeStatus","negative":false},
-  "miniaturized":{"id":"miniaturized","name":"Miniaturizado","texture":"miniaturized","negative":false},
-  "maximized":{"id":"maximized","name":"Maximizado","texture":"maximized","negative":false},
-  "transformed":{"id":"transformed","name":"Transformado","texture":"transformed","negative":false},
-  "bloodThirst":{"id":"bloodThirst","name":"Sed de sangre","texture":"bloodThirstStatus","negative":false},
-  "crimsonPact":{"id":"crimsonPact","name":"Pacto carmesí","texture":"crimsonPactStatus","negative":false},
-  "lifesteal":{"id":"lifesteal","name":"Robo de vida","texture":"lifesteal","negative":false}
+  "paralyzed": {
+    "id": "paralyzed",
+    "name": "Paralizado",
+    "texture": "paralyzed",
+    "negative": true
+  },
+  "poison": {
+    "id": "poison",
+    "name": "Envenenado",
+    "texture": "poisoned",
+    "negative": true
+  },
+  "stealth": {
+    "id": "stealth",
+    "name": "Sigilo",
+    "texture": "stealth",
+    "negative": false
+  },
+  "fireDamage": {
+    "id": "fireDamage",
+    "name": "Fuego perecedero",
+    "texture": "fireDamageUp",
+    "negative": false
+  },
+  "adaptiveResistance": {
+    "id": "adaptiveResistance",
+    "name": "Resistencia adaptada",
+    "texture": "adaptiveResistanceStatus",
+    "negative": false
+  },
+  "wateryDodge": {
+    "id": "wateryDodge",
+    "name": "Esquiva acuosa",
+    "texture": "wateryDodgeStatus",
+    "negative": false
+  },
+  "miniaturized": {
+    "id": "miniaturized",
+    "name": "Miniaturizado",
+    "texture": "miniaturized",
+    "negative": false
+  },
+  "maximized": {
+    "id": "maximized",
+    "name": "Maximizado",
+    "texture": "maximized",
+    "negative": false
+  },
+  "transformed": {
+    "id": "transformed",
+    "name": "Transformado",
+    "texture": "transformed",
+    "negative": false
+  },
+  "bloodThirst": {
+    "id": "bloodThirst",
+    "name": "Sed de sangre",
+    "texture": "bloodThirstStatus",
+    "negative": false
+  },
+  "crimsonPact": {
+    "id": "crimsonPact",
+    "name": "Pacto carmesí",
+    "texture": "crimsonPactStatus",
+    "negative": false
+  },
+  "lifesteal": {
+    "id": "lifesteal",
+    "name": "Robo de vida",
+    "texture": "lifesteal",
+    "negative": false
+  },
+  "immobilized": {
+    "id": "immobilized",
+    "name": "Inmovilizado",
+    "texture": "immobilized",
+    "negative": true
+  },
+  "bleeding": {
+    "id": "bleeding",
+    "name": "Sangrado",
+    "texture": "bleeding",
+    "negative": true
+  },
+  "enemyFrenzy": {
+    "id": "enemyFrenzy",
+    "name": "Frenesí",
+    "texture": "enemyFrenzy",
+    "negative": false
+  },
+  "enemyMutation": {
+    "id": "enemyMutation",
+    "name": "Mutación",
+    "texture": "enemyMutation",
+    "negative": false
+  },
+  "regeneration": {
+    "id": "regeneration",
+    "name": "Regeneración",
+    "texture": "regeneration",
+    "negative": false
+  }
 }
