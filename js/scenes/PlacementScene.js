@@ -39,8 +39,10 @@ export class PlacementScene extends Phaser.Scene{
     this.refreshRosterPanel();
     this.refreshDetailsPanel();
 
-    this.startBtnData=makeButton(this,640,670,290,56,'INICIAR COMBATE',()=>this.startBattle());
-    makeButton(this,825,670,150,46,'RELIQUIAS',()=>{this.scene.pause();this.scene.launch('Relics',{returnScene:'Placement'});});
+    this.startBtnData=makeButton(this,650,682,250,48,'INICIAR COMBATE',()=>this.startBattle()).setDepth(12);
+    this.relicsBtnData=makeButton(this,850,682,125,42,'RELIQUIAS',()=>{this.scene.pause();this.scene.launch('Relics',{returnScene:'Placement'});}).setDepth(12);
+    this.startBtnData.text.setFontSize(17);
+    this.relicsBtnData.text.setFontSize(15);
     this.startBtn=this.startBtnData.bg;this.startBtn.setAlpha(.45);
   }
 

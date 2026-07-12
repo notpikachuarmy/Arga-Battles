@@ -49,6 +49,31 @@ export class BattleScene extends Phaser.Scene{
     const u={id:this.nextId++,recruitId,type,team,col,row,level,name:options.name||cls?.name||'Zombi',blessing:blessing||cls?.defaultBlessing||null,...stats,hp:stats.maxHp,mp:stats.maxMp,ap:GAME.apPerTurn,maxAp:GAME.apPerTurn,alive:true,learnedAbilities:known,buffs:[],paralyzedTurns:0,turnsTaken:0,blessingBonus:0,isSummon:!!options.isSummon,isObstacle:!!options.isObstacle,resurrectionUsed:false,copiedAbility:null,ownerId:options.ownerId??null,persistentSummon:!!options.persistentSummon,cooldowns:{},echoUsed:false,berserkerActive:false};
     this.units.push(u);return u;
   }
+  drawUnit(u){
+    const {x,y}=this.cellCenter(u.col,u.row);
+    const texture=u.isObstacle?'earthWall':u.type;
+    u.sprite=this.add.image(x,y,texture)
+      .setDisplaySize(u.isObstacle?88:82,u.isObstacle?88:82)
+      .setFlipX(u.team==='enemy'&&!u.isObstacle)
+      .setDepth(8)
+      .setInteractive({useHandCursor:true});
+    u.sprite.on('pointerdown',()=>{
+      if(this.battleOver)return;
+      if(this.active?.team==='player'&&!this.autoBattle&&(this.action==='attack'||this.action==='skill')){
+        this.onCell(u.col,u.row);
+        return;
+      }
+      this.showStats(u);
+    });
+    u.hpBack=this.add.rectangle(x,y-48,76,8,0x281c2e,.95).setOrigin(.5).setDepth(9);
+    u.hpBar=this.add.rectangle(x-37,y-48,74,6,0x42d36e,1).setOrigin(0,.5).setDepth(10);
+    u.arrow=this.add.image(x,y+48,'arrow').setDisplaySize(24,24).setDepth(9).setFlipX(u.team==='enemy').setVisible(!u.isObstacle);
+    if(u.isObstacle){
+      u.arrow.setVisible(false);
+      u.sprite.removeInteractive();
+    }
+    this.updateUnitHp(u);
+  }
   applyBlessings(){for(const team of ['player','enemy']){const list=this.units.filter(u=>u.team===team&&!u.isSummon&&u.blessing),counts={};list.forEach(u=>counts[u.blessing]=(counts[u.blessing]||0)+1);const resonant=team==='player'?hasRelic(SAVE,'resonantStone'):this.enemyRelics.includes('resonantStone');list.forEach(u=>{const b=BLESSINGS[u.blessing];if(!b)return;const count=(counts[u.blessing]||1)+(resonant?1:0);const bonus=blessingBonusForCount(count);u[b.stat]+=bonus;u.blessingBonus=bonus;});}}
   createHud(){
     this.hudBg=this.add.rectangle(640,612,1235,205,0x120d1b,.97).setStrokeStyle(3,0x786589);

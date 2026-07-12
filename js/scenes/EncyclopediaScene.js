@@ -120,7 +120,7 @@ export class EncyclopediaScene extends Phaser.Scene {
     this.content.add([detailIcon,detailName,detailMeta,detailDesc]);
 
     const showAbility=(a)=>{
-      detailIcon.setTexture(a.icon);
+      detailIcon.setTexture(a.icon).setDisplaySize(72,72);
       detailName.setText(a.name);
       detailMeta.setText(`Rareza ${a.rarity} · ${a.apCost} AP · ${a.mpCost} MP`);
       detailDesc.setText(a.description);
