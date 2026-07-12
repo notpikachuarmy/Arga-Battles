@@ -37,6 +37,7 @@ export class BattleScene extends Phaser.Scene{
   spawnUnit(type,team,col,row,level=1,recruitId=null,scale=null,learnedAbilities=[],blessing=null,options={}){
     let stats;
     if(type==='zombie')stats={maxHp:12,maxMp:0,df:1,str:2,int:0,agi:1,constitution:2,energy:0,charisma:0,will:1,stealth:0,perception:1};
+    else if(type==='wall')stats={maxHp:20,maxMp:0,df:0,str:0,int:0,agi:0,constitution:4,energy:0,charisma:0,will:99,stealth:0,perception:0};
     else stats=calculateStats(type,level);
     if(team==='enemy'&&scale&&!options.isSummon){stats.maxHp=Math.max(5,Math.round(stats.maxHp*scale.hp));for(const key of ['df','str','int','agi','charisma','will','perception'])stats[key]=Math.max(1,Math.round(stats[key]*scale.combat));}
     const cls=CLASSES[type];
@@ -93,7 +94,7 @@ export class BattleScene extends Phaser.Scene{
   refreshTurnOrder(){this.turnPanel.removeAll(true);this.turnQueue.filter(u=>u.alive).forEach((u,i)=>{const y=i*62,active=u===this.active;const aura=this.add.circle(48,y+30,active?29:25,u.team==='player'?0x32d46f:0xe34754,active?1:.65);const img=this.add.image(48,y+30,u.type).setDisplaySize(active?51:44,active?51:44).setFlipX(u.team==='enemy');const hp=this.add.text(78,y+22,`${Math.max(0,u.hp)}/${u.maxHp}`,{fontSize:'11px',color:'#fff'});this.turnPanel.add([aura,img,hp]);});}
   beginTurn(){
     if(this.battleOver)return;this.clearHighlights();this.action='none';while(this.queueIndex<this.turnQueue.length&&!this.turnQueue[this.queueIndex].alive)this.queueIndex++;if(this.queueIndex>=this.turnQueue.length)this.buildTurnQueue();this.active=this.turnQueue[this.queueIndex];if(!this.active)return;
-    this.active.ap=this.active.maxAp;this.active.turnsTaken++;this.active.usedAbilitiesThisTurn=[];this.selectedSkillIndex=0;this.active.damageAtTurnStart=this.damageSerial;
+    this.active.ap=this.active.maxAp;this.active.turnsTaken++;this.active.usedAbilitiesThisTurn=[];this.abilitiesFor(this.active).forEach(a=>delete a._aiBlocked);this.selectedSkillIndex=0;this.active.damageAtTurnStart=this.damageSerial;
     Object.keys(this.active.cooldowns||{}).forEach(id=>{if(this.active.cooldowns[id]>0)this.active.cooldowns[id]--;});
     if(this.active.turnsTaken%BALANCE.mpRegenEveryTurns===0&&this.active.mp<this.active.maxMp){const restored=Math.max(1,Math.ceil(this.active.maxMp*BALANCE.mpRegenPercent)),actual=Math.min(restored,this.active.maxMp-this.active.mp);this.active.mp+=actual;flashText(this,`+${actual} MP`,this.active.sprite.x,this.active.sprite.y-78,0x71bfff);}
     this.applyTurnStartStatuses(this.active);this.updateHud();this.refreshTurnOrder();
@@ -122,7 +123,10 @@ export class BattleScene extends Phaser.Scene{
     if(a.targetMode==='self')return[{col:u.col,row:u.row}];
     if(a.targetMode==='line'){for(let i=1;i<=a.range;i++){const col=u.col+dir*i;if(col<0||col>=GAME.cols)break;const o=this.unitAt(col,u.row);if(!o)continue;if(o.team===u.team&&!o.isObstacle)continue;return o.team!==u.team?[{col,row:u.row}]:[];}return[];}
     if(a.targetMode==='frontArea'){const col=u.col+dir;return[-1,0,1].map(d=>({col,row:u.row+d})).filter(p=>p.col>=0&&p.col<GAME.cols&&p.row>=0&&p.row<GAME.rows);}
-    if(a.targetMode==='frontEmpty'){return this.validMoves(u).filter(p=>Math.abs(p.col-u.col)+Math.abs(p.row-u.row)===1);}
+    if(a.targetMode==='frontEmpty'){
+      const col=u.col+dir,row=u.row;
+      return col>=0&&col<GAME.cols&&!this.unitAt(col,row)?[{col,row}]:[];
+    }
     if(a.targetMode==='ally')return this.units.filter(t=>t.alive&&t.team===u.team&&!t.isObstacle&&Math.abs(t.col-u.col)+Math.abs(t.row-u.row)<=a.range).map(t=>({col:t.col,row:t.row}));
     if(a.targetMode==='deadAlly')return this.units.filter(t=>!t.alive&&t.team===u.team&&!t.isSummon).map(t=>({col:t.col,row:t.row}));
     if(a.targetMode==='cell')return all;
@@ -181,10 +185,25 @@ export class BattleScene extends Phaser.Scene{
   }
   toggleAutoBattle(){if(this.battleOver)return;this.autoBattle=!this.autoBattle;this.autoLabel.setText(`AUTO-BATTLE: ${this.autoBattle?'SÍ':'NO'}`);this.autoButton.setFillStyle(this.autoBattle?0x285f3c:0x241a31,.96);if(this.autoBattle&&this.active?.team==='player')this.time.delayedCall(150,()=>this.runAIControlled(this.active));}
   runAIControlled(u){if(!u?.alive||this.battleOver||u!==this.active)return;const enemyTeam=u.team==='player'?'enemy':'player';let safety=0;const loop=()=>{if(this.battleOver||u!==this.active||!u.alive)return;if(u.ap<=0||safety++>8)return this.endTurn();const front=this.frontTarget(u);if(front&&front.team===enemyTeam&&u.ap>=2){const estimate=Math.max(1,2+Math.floor(u.str/2)-Math.floor(front.df/3));if(front.hp<=estimate||!this.bestAbilityAction(u,enemyTeam))return this.basicAttack(u,front,()=>{u.ap-=2;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});}
-      const action=this.bestAbilityAction(u,enemyTeam);if(action){this.selectedSkillIndex=this.abilitiesFor(u).findIndex(a=>a.id===action.ability.id);this.executeAbility(u,action.cell,action.ability);return this.time.delayedCall(180,loop);}
+      const action=this.bestAbilityAction(u,enemyTeam);if(action){
+        this.selectedSkillIndex=this.abilitiesFor(u).findIndex(a=>a.id===action.ability.id);
+        try{
+          const beforeAp=u.ap,beforeMp=u.mp;
+          this.executeAbility(u,action.cell,action.ability);
+          if(u.ap===beforeAp&&u.mp===beforeMp){
+            action.ability._aiBlocked=true;
+            return this.time.delayedCall(80,loop);
+          }
+        }catch(error){
+          console.error('AI ability failed:',action.ability?.id,error);
+          action.ability._aiBlocked=true;
+          return this.time.delayedCall(80,loop);
+        }
+        return this.time.delayedCall(180,loop);
+      }
       if(front&&front.team===enemyTeam&&u.ap>=2)return this.basicAttack(u,front,()=>{u.ap-=2;this.updateHud();if(!this.checkEnd())this.time.delayedCall(150,loop);});
       const targets=this.units.filter(q=>q.alive&&q.team===enemyTeam&&!q.isObstacle&&!q.buffs.some(b=>b.id==='stealth'&&Math.abs(q.col-u.col)+Math.abs(q.row-u.row)>1));const moves=this.validMoves(u);if(u.ap>=1&&moves.length&&targets.length){const current=Math.min(...targets.map(t=>Math.abs(t.col-u.col)+Math.abs(t.row-u.row)));const scored=moves.map(m=>{const dist=Math.min(...targets.map(t=>Math.abs(t.col-m.col)+Math.abs(t.row-m.row)));const frontAfter=targets.some(t=>t.row===m.row&&t.col===m.col+(u.team==='player'?1:-1));return{m,score:(current-dist)*20+(frontAfter?80:0)-Math.abs(m.row-u.row)};}).sort((a,b)=>b.score-a.score);if(scored[0]?.score>0)return this.moveUnit(u,scored[0].m.col,scored[0].m.row,()=>{u.ap--;this.updateHud();this.time.delayedCall(150,loop);});}this.endTurn();};loop();}
-  bestAbilityAction(u,enemyTeam){const abilities=this.abilitiesFor(u).filter(a=>u.ap>=a.apCost&&u.mp>=this.abilityMpCost(u,a)&&this.abilityCooldown(u,a)<=0&&!u.usedAbilitiesThisTurn?.includes(a.id));let best=null;for(const a of abilities){const cells=this.skillCells(u,a);let candidates=[];if(a.targetMode==='self')candidates=[null];else candidates=cells;for(const cell of candidates){const t=cell?this.unitAt(cell.col,cell.row):u;let score=0;if(a.targetMode==='frontEmpty'){if(!cell)continue;score=a.id==='runeEarthWall'?15:35;}else if(a.targetMode==='ally'){if(!t||t.team!==u.team||t.hp>=t.maxHp)continue;score=70+(1-t.hp/t.maxHp)*80;}else if(a.targetMode==='self'){if(['bloodThirst','crimsonPact'].includes(a.id)&&u.hp<=6)continue;if(['miniaturize','maximize','devilBloodThorns','jetBlackRipperBlood','demonicHeart','runeFadingFire'].includes(a.id)&&u.buffs.some(b=>b.id===({miniaturize:'miniaturized',maximize:'maximized',devilBloodThorns:'bloodThorns',jetBlackRipperBlood:'stealth',demonicHeart:'lifesteal',runeFadingFire:'fireDamage'}[a.id])))continue;score=35;}else if(a.targetMode==='cell'){score=30;}else{if(!t||t.team!==enemyTeam)continue;score=85+(t.hp<=10?100:0);}if(!best||score>best.score)best={ability:a,cell,score};}}return best;}
+  bestAbilityAction(u,enemyTeam){const abilities=this.abilitiesFor(u).filter(a=>u.ap>=a.apCost&&u.mp>=this.abilityMpCost(u,a)&&this.abilityCooldown(u,a)<=0&&!u.usedAbilitiesThisTurn?.includes(a.id)&&!a._aiBlocked);let best=null;for(const a of abilities){const cells=this.skillCells(u,a);let candidates=[];if(a.targetMode==='self')candidates=[null];else candidates=cells;for(const cell of candidates){const t=cell?this.unitAt(cell.col,cell.row):u;let score=0;if(a.targetMode==='frontEmpty'){if(!cell)continue;score=a.id==='runeEarthWall'?15:35;}else if(a.targetMode==='ally'){if(!t||t.team!==u.team||t.hp>=t.maxHp)continue;score=70+(1-t.hp/t.maxHp)*80;}else if(a.targetMode==='self'){if(['bloodThirst','crimsonPact'].includes(a.id)&&u.hp<=6)continue;if(['miniaturize','maximize','devilBloodThorns','jetBlackRipperBlood','demonicHeart','runeFadingFire'].includes(a.id)&&u.buffs.some(b=>b.id===({miniaturize:'miniaturized',maximize:'maximized',devilBloodThorns:'bloodThorns',jetBlackRipperBlood:'stealth',demonicHeart:'lifesteal',runeFadingFire:'fireDamage'}[a.id])))continue;score=35;}else if(a.targetMode==='cell'){score=30;}else{if(!t||t.team!==enemyTeam)continue;score=85+(t.hp<=10?100:0);}if(!best||score>best.score)best={ability:a,cell,score};}}return best;}
   aiUseAbility(){return false;}
   setHudVisible(visible){this.hudObjects?.forEach(o=>o.setVisible(visible));}
   abilityMpCost(u,a){return Math.max(0,a.mpCost-(this.teamHasRelic(u.team,'magicCore')?2:0));}
