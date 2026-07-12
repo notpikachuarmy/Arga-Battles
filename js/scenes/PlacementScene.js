@@ -1,6 +1,7 @@
 import { GAME, BALANCE } from '../config.js';
 import { CLASSES } from '../data/classes.js';
 import { ABILITIES } from '../data/abilities.js';
+import { EXCLUSIVE_ENEMIES } from '../data/enemies.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { SAVE, randomTeam, saveRun } from '../data/save.js';
 import { RELIC_KEYS, hasRelic } from '../data/relics.js';
@@ -225,9 +226,17 @@ export class PlacementScene extends Phaser.Scene{
   createEnemyPreview(){
     const isBoss=this.nodeType==='boss';
     const count=isBoss?Math.min(5,this.maxDeploy()+1):this.maxDeploy();
-    this.enemyTeam=Array.from({length:count},()=>randomTeam()[0]);const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,count);
-    this.enemyPositions=this.enemyTeam.map((recruit,i)=>({type:recruit.type,name:isBoss&&i===0?`Guardián ${CLASSES[recruit.type].name}`:null,aiProfile:isBoss&&i===0?'boss':({rune:'balanced',formless:'flanker',demon:'aggressive'}[recruit.type]||'balanced'),level:isBoss&&i===0?3:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]}));
-    this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.gridY+p.row*GAME.tile+GAME.tile/2,p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
+    const slots=Phaser.Utils.Array.Shuffle(Array.from({length:9},(_,i)=>({col:3+i%3,row:Math.floor(i/3)}))).slice(0,count);
+    const exclusiveChance=isBoss?.35:.72;
+    this.enemyPositions=Array.from({length:count},(_,i)=>{
+      if(Math.random()<exclusiveChance){
+        const enemy=Phaser.Utils.Array.GetRandom(EXCLUSIVE_ENEMIES);
+        return {type:enemy.id,texture:enemy.texture,name:isBoss&&i===0?`Guardián ${enemy.name}`:enemy.name,aiProfile:isBoss&&i===0?'boss':enemy.aiProfile,level:isBoss&&i===0?3:1,learnedAbilities:[...enemy.abilities],enemyId:enemy.id,...slots[i]};
+      }
+      const recruit=randomTeam()[0];
+      return {type:recruit.type,texture:recruit.type,name:isBoss&&i===0?`Guardián ${CLASSES[recruit.type].name}`:null,aiProfile:isBoss&&i===0?'boss':({rune:'balanced',formless:'flanker',demon:'aggressive'}[recruit.type]||'balanced'),level:isBoss&&i===0?3:1,blessing:recruit.blessing,learnedAbilities:recruit.learnedAbilities,...slots[i]};
+    });
+    this.enemyPositions.forEach(p=>this.add.image(GAME.gridX+p.col*GAME.tile+GAME.tile/2,GAME.gridY+p.row*GAME.tile+GAME.tile/2,p.texture||p.type).setDisplaySize(82,82).setFlipX(true).setTint(0xffd6d8));
     this.refreshPoints();
   }
 

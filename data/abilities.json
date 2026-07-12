@@ -445,5 +445,199 @@
       "healPerKill": 5,
       "fx": "magic"
     }
+  },
+  "enemyBite": {
+    "id": "enemyBite",
+    "name": "Mordisco",
+    "icon": "enemyBite",
+    "apCost": 2,
+    "mpCost": 0,
+    "range": 1,
+    "rarity": "N",
+    "cooldown": 1,
+    "targetMode": "line",
+    "description": "Mordisco cuerpo a cuerpo. Inflige daño físico y puede causar sangrado durante 2 turnos.",
+    "effectHandler": "projectileDamage",
+    "effectData": {
+      "base": 2,
+      "die": 3,
+      "scaling": {
+        "str": 3
+      },
+      "defenseDivisor": 3,
+      "minimumDamage": 1,
+      "fx": "physical",
+      "status": {
+        "id": "bleeding",
+        "duration": 2,
+        "chance": 0.25
+      }
+    }
+  },
+  "enemyWeb": {
+    "id": "enemyWeb",
+    "name": "Telaraña",
+    "icon": "enemyWeb",
+    "apCost": 2,
+    "mpCost": 3,
+    "range": 4,
+    "rarity": "N",
+    "cooldown": 3,
+    "targetMode": "line",
+    "description": "Ataque en línea que inflige poco daño e inmoviliza al primer rival alcanzado durante 1 turno.",
+    "effectHandler": "projectileDamage",
+    "effectData": {
+      "base": 1,
+      "die": 2,
+      "scaling": {
+        "int": 5
+      },
+      "defenseDivisor": 5,
+      "minimumDamage": 1,
+      "fx": "magic",
+      "status": {
+        "id": "immobilized",
+        "duration": 1,
+        "chance": 1
+      }
+    }
+  },
+  "enemyDive": {
+    "id": "enemyDive",
+    "name": "Vuelo rasante",
+    "icon": "enemyDive",
+    "apCost": 2,
+    "mpCost": 2,
+    "range": 3,
+    "rarity": "N",
+    "cooldown": 2,
+    "targetMode": "line",
+    "description": "Ataque veloz en línea. Hace daño físico y aprovecha la Agilidad del murciélago.",
+    "effectHandler": "projectileDamage",
+    "effectData": {
+      "base": 2,
+      "die": 3,
+      "scaling": {
+        "agi": 3
+      },
+      "defenseDivisor": 4,
+      "minimumDamage": 1,
+      "fx": "physical"
+    }
+  },
+  "enemyQuake": {
+    "id": "enemyQuake",
+    "name": "Golpe sísmico",
+    "icon": "enemyQuake",
+    "apCost": 3,
+    "mpCost": 4,
+    "range": 1,
+    "rarity": "R",
+    "cooldown": 3,
+    "targetMode": "frontArea",
+    "description": "Golpea las tres casillas frente al gólem con daño moderado.",
+    "effectHandler": "areaDamage",
+    "effectData": {
+      "base": 3,
+      "die": 4,
+      "scaling": {
+        "str": 4
+      },
+      "defenseDivisor": 3,
+      "minimumDamage": 1,
+      "fx": "physical"
+    }
+  },
+  "enemyDecay": {
+    "id": "enemyDecay",
+    "name": "Putrefacción",
+    "icon": "enemyDecay",
+    "apCost": 2,
+    "mpCost": 2,
+    "range": 2,
+    "rarity": "N",
+    "cooldown": 3,
+    "targetMode": "line",
+    "description": "Ataque pútrido que puede envenenar al objetivo durante 3 turnos.",
+    "effectHandler": "projectileDamage",
+    "effectData": {
+      "base": 1,
+      "die": 3,
+      "scaling": {
+        "int": 5
+      },
+      "defenseDivisor": 4,
+      "minimumDamage": 1,
+      "fx": "magic",
+      "status": {
+        "id": "poison",
+        "duration": 3,
+        "chance": 0.45
+      }
+    }
+  },
+  "enemyFrenzy": {
+    "id": "enemyFrenzy",
+    "name": "Frenesí",
+    "icon": "enemyFrenzy",
+    "apCost": 1,
+    "mpCost": 0,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 4,
+    "targetMode": "self",
+    "description": "Aumenta Fuerza y Agilidad durante 2 turnos.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "unique": true,
+      "buff": {
+        "id": "enemyFrenzy",
+        "remaining": 2,
+        "str": 2,
+        "agi": 2
+      }
+    }
+  },
+  "enemyStoneRegeneration": {
+    "id": "enemyStoneRegeneration",
+    "name": "Regeneración pétrea",
+    "icon": "enemyStoneRegeneration",
+    "apCost": 2,
+    "mpCost": 4,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 4,
+    "targetMode": "ally",
+    "description": "El gólem recompone su cuerpo y recupera vida.",
+    "effectHandler": "heal",
+    "effectData": {
+      "base": 3,
+      "die": 4,
+      "scaling": {
+        "constitution": 4
+      }
+    }
+  },
+  "enemyMutation": {
+    "id": "enemyMutation",
+    "name": "Mutación",
+    "icon": "enemyMutation",
+    "apCost": 1,
+    "mpCost": 3,
+    "range": 0,
+    "rarity": "R",
+    "cooldown": 4,
+    "targetMode": "self",
+    "description": "La aberración altera su cuerpo, aumentando Fuerza y Defensa durante 3 turnos.",
+    "effectHandler": "addBuff",
+    "effectData": {
+      "unique": true,
+      "buff": {
+        "id": "enemyMutation",
+        "remaining": 3,
+        "str": 2,
+        "df": 2
+      }
+    }
   }
 }

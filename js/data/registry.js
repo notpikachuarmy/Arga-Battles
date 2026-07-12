@@ -1,5 +1,5 @@
 const VALID_RARITIES = new Set(['N','R','SR','SSR','UR']);
-const VALID_AI_PROFILES = new Set(['balanced','aggressive','defensive','support','summoner','flanker','boss']);
+const VALID_AI_PROFILES = new Set(['balanced','aggressive','defensive','support','summoner','flanker','boss','predator','controller','flying','tank','mutant','shambler']);
 const VALID_EFFECT_HANDLERS = new Set(['projectileDamage','applyStatusProjectile','areaDamage','addBuff','addPersistentBuff','summon','heal','resurrect','randomCellDamage','perfectTransformation','copyLastEnemyAbility','healthForResources','sacrificePercentBuff','adjacentSacrificeDamage']);
 
 async function readJson(path){

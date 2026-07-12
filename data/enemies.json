@@ -1,5 +1,343 @@
 {
-  "enemy_rune": {"id":"enemy_rune","name":"Trazador de Runas rival","type":"class","classId":"rune","playable":false,"rarity":"N","aiProfile":"balanced","abilityPool":"class"},
-  "enemy_formless": {"id":"enemy_formless","name":"Sin Forma rival","type":"class","classId":"formless","playable":false,"rarity":"N","aiProfile":"flanker","abilityPool":"class"},
-  "enemy_demon": {"id":"enemy_demon","name":"Sangre Demoníaca rival","type":"class","classId":"demon","playable":false,"rarity":"N","aiProfile":"aggressive","abilityPool":"class"}
+  "enemy_rune": {
+    "id": "enemy_rune",
+    "name": "Trazador de Runas rival",
+    "type": "class",
+    "classId": "rune",
+    "playable": false,
+    "rarity": "N",
+    "aiProfile": "balanced",
+    "abilityPool": "class"
+  },
+  "enemy_formless": {
+    "id": "enemy_formless",
+    "name": "Sin Forma rival",
+    "type": "class",
+    "classId": "formless",
+    "playable": false,
+    "rarity": "N",
+    "aiProfile": "flanker",
+    "abilityPool": "class"
+  },
+  "enemy_demon": {
+    "id": "enemy_demon",
+    "name": "Sangre Demoníaca rival",
+    "type": "class",
+    "classId": "demon",
+    "playable": false,
+    "rarity": "N",
+    "aiProfile": "aggressive",
+    "abilityPool": "class"
+  },
+  "wolf": {
+    "id": "wolf",
+    "name": "Lobo",
+    "type": "exclusive",
+    "playable": false,
+    "recruitable": false,
+    "texture": "wolf",
+    "portrait": "wolfPortrait",
+    "rarity": "N",
+    "family": "Bestia",
+    "size": 1,
+    "aiProfile": "predator",
+    "baseStats": {
+      "constitution": 8,
+      "energy": 2,
+      "df": 5,
+      "str": 9,
+      "int": 2,
+      "agi": 11,
+      "charisma": 2,
+      "will": 5,
+      "stealth": 8,
+      "perception": 8,
+      "maxHp": 40,
+      "maxMp": 10
+    },
+    "growth": {
+      "constitution": 2,
+      "energy": 1,
+      "df": 1,
+      "str": 2,
+      "int": 0,
+      "agi": 2,
+      "charisma": 0,
+      "will": 1,
+      "stealth": 1,
+      "perception": 1
+    },
+    "abilities": [
+      "enemyBite",
+      "enemyFrenzy"
+    ],
+    "resistances": {
+      "poison": 0,
+      "bleeding": 0
+    },
+    "reward": {
+      "gold": 7,
+      "xp": 8
+    },
+    "codex": "Depredador veloz que busca objetivos heridos. Es frágil frente a combatientes bien protegidos."
+  },
+  "spider": {
+    "id": "spider",
+    "name": "Araña",
+    "type": "exclusive",
+    "playable": false,
+    "recruitable": false,
+    "texture": "spider",
+    "portrait": "spiderPortrait",
+    "rarity": "N",
+    "family": "Arácnido",
+    "size": 1,
+    "aiProfile": "controller",
+    "baseStats": {
+      "constitution": 7,
+      "energy": 5,
+      "df": 4,
+      "str": 4,
+      "int": 8,
+      "agi": 8,
+      "charisma": 2,
+      "will": 6,
+      "stealth": 9,
+      "perception": 7,
+      "maxHp": 35,
+      "maxMp": 25
+    },
+    "growth": {
+      "constitution": 1,
+      "energy": 2,
+      "df": 1,
+      "str": 1,
+      "int": 2,
+      "agi": 1,
+      "charisma": 0,
+      "will": 1,
+      "stealth": 1,
+      "perception": 1
+    },
+    "abilities": [
+      "enemyWeb",
+      "enemyBite"
+    ],
+    "resistances": {
+      "poison": 25,
+      "bleeding": 0
+    },
+    "reward": {
+      "gold": 8,
+      "xp": 10
+    },
+    "codex": "Controla el terreno con telarañas. Prefiere mantener distancia y detener el avance enemigo."
+  },
+  "bat": {
+    "id": "bat",
+    "name": "Murciélago",
+    "type": "exclusive",
+    "playable": false,
+    "recruitable": false,
+    "texture": "bat",
+    "portrait": "batPortrait",
+    "rarity": "N",
+    "family": "Bestia",
+    "size": 1,
+    "aiProfile": "flying",
+    "baseStats": {
+      "constitution": 6,
+      "energy": 4,
+      "df": 3,
+      "str": 5,
+      "int": 3,
+      "agi": 13,
+      "charisma": 2,
+      "will": 5,
+      "stealth": 11,
+      "perception": 10,
+      "maxHp": 30,
+      "maxMp": 20
+    },
+    "growth": {
+      "constitution": 1,
+      "energy": 1,
+      "df": 0,
+      "str": 1,
+      "int": 0,
+      "agi": 3,
+      "charisma": 0,
+      "will": 1,
+      "stealth": 2,
+      "perception": 2
+    },
+    "abilities": [
+      "enemyDive"
+    ],
+    "resistances": {
+      "poison": 0,
+      "bleeding": 0
+    },
+    "reward": {
+      "gold": 6,
+      "xp": 9
+    },
+    "codex": "Criatura muy móvil y frágil. Rodea al grupo y se lanza contra los objetivos más débiles."
+  },
+  "golem": {
+    "id": "golem",
+    "name": "Gólem",
+    "type": "exclusive",
+    "playable": false,
+    "recruitable": false,
+    "texture": "golem",
+    "portrait": "golemPortrait",
+    "rarity": "R",
+    "family": "Constructo",
+    "size": 2,
+    "aiProfile": "tank",
+    "baseStats": {
+      "constitution": 15,
+      "energy": 5,
+      "df": 12,
+      "str": 8,
+      "int": 3,
+      "agi": 3,
+      "charisma": 1,
+      "will": 12,
+      "stealth": 0,
+      "perception": 5,
+      "maxHp": 75,
+      "maxMp": 25
+    },
+    "growth": {
+      "constitution": 3,
+      "energy": 1,
+      "df": 3,
+      "str": 1,
+      "int": 0,
+      "agi": 0,
+      "charisma": 0,
+      "will": 2,
+      "stealth": 0,
+      "perception": 1
+    },
+    "abilities": [
+      "enemyQuake",
+      "enemyStoneRegeneration"
+    ],
+    "resistances": {
+      "poison": 100,
+      "bleeding": 100
+    },
+    "reward": {
+      "gold": 13,
+      "xp": 15
+    },
+    "codex": "Constructo lento y resistente. Bloquea rutas y castiga a varios enemigos con golpes de área."
+  },
+  "aberration": {
+    "id": "aberration",
+    "name": "Aberración humanoide",
+    "type": "exclusive",
+    "playable": false,
+    "recruitable": false,
+    "texture": "aberration",
+    "portrait": "aberrationPortrait",
+    "rarity": "R",
+    "family": "Aberración",
+    "size": 1,
+    "aiProfile": "mutant",
+    "baseStats": {
+      "constitution": 10,
+      "energy": 6,
+      "df": 6,
+      "str": 10,
+      "int": 6,
+      "agi": 7,
+      "charisma": 1,
+      "will": 7,
+      "stealth": 4,
+      "perception": 6,
+      "maxHp": 50,
+      "maxMp": 30
+    },
+    "growth": {
+      "constitution": 2,
+      "energy": 1,
+      "df": 1,
+      "str": 2,
+      "int": 1,
+      "agi": 1,
+      "charisma": 0,
+      "will": 1,
+      "stealth": 1,
+      "perception": 1
+    },
+    "abilities": [
+      "enemyMutation",
+      "enemyDecay"
+    ],
+    "resistances": {
+      "poison": 40,
+      "bleeding": 20
+    },
+    "reward": {
+      "gold": 12,
+      "xp": 14
+    },
+    "codex": "Humanoide alterado que refuerza su cuerpo durante el combate y propaga putrefacción."
+  },
+  "enemy_zombie": {
+    "id": "enemy_zombie",
+    "name": "Zombi",
+    "type": "exclusive",
+    "playable": false,
+    "recruitable": false,
+    "texture": "zombie",
+    "portrait": "zombiePortrait",
+    "rarity": "N",
+    "family": "No muerto",
+    "size": 1,
+    "aiProfile": "shambler",
+    "baseStats": {
+      "constitution": 10,
+      "energy": 3,
+      "df": 5,
+      "str": 7,
+      "int": 3,
+      "agi": 3,
+      "charisma": 1,
+      "will": 9,
+      "stealth": 1,
+      "perception": 4,
+      "maxHp": 50,
+      "maxMp": 15
+    },
+    "growth": {
+      "constitution": 2,
+      "energy": 1,
+      "df": 1,
+      "str": 1,
+      "int": 0,
+      "agi": 0,
+      "charisma": 0,
+      "will": 2,
+      "stealth": 0,
+      "perception": 1
+    },
+    "abilities": [
+      "enemyBite",
+      "enemyDecay"
+    ],
+    "resistances": {
+      "poison": 100,
+      "bleeding": 50
+    },
+    "reward": {
+      "gold": 7,
+      "xp": 8
+    },
+    "codex": "No muerto básico. A diferencia de los zombis invocados, conserva Mordisco y Putrefacción."
+  }
 }

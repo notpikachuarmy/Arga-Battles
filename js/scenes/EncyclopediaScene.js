@@ -4,6 +4,7 @@ import { ABILITIES } from '../data/abilities.js';
 import { BLESSINGS, BLESSING_KEYS } from '../data/blessings.js';
 import { calculateStats } from '../systems/progression.js';
 import { makeButton } from '../utils/helpers.js';
+import { EXCLUSIVE_ENEMIES } from '../data/enemies.js';
 
 const STAT_HELP = [
   ['HP', 'Vida. Al llegar a 0 la unidad queda fuera del combate.'],
@@ -34,7 +35,8 @@ export class EncyclopediaScene extends Phaser.Scene {
     this.nav.push(this.makeNav(115,105,'ESTADÍSTICAS',()=>this.showStatsHelp()));
     this.nav.push(this.makeNav(115,175,'BENDICIONES',()=>this.showBlessings()));
     this.nav.push(this.makeNav(115,235,'RELIQUIAS',()=>{this.scene.pause();this.scene.launch('Relics',{returnScene:'Encyclopedia',all:true});}));
-    CLASS_KEYS.forEach((key,i)=>this.nav.push(this.makeNav(115,315+i*82,CLASSES[key].name,()=>this.showClass(key))));
+    this.nav.push(this.makeNav(115,295,'ENEMIGOS',()=>this.showEnemies()));
+    CLASS_KEYS.forEach((key,i)=>this.nav.push(this.makeNav(115,365+i*70,CLASSES[key].name,()=>this.showClass(key))));
 
     this.content=this.add.container(260,90);
     this.showStatsHelp();
@@ -139,6 +141,26 @@ export class EncyclopediaScene extends Phaser.Scene {
     });
     if(pool.length)showAbility(ABILITIES[pool[0]]);
   }
+
+  showEnemies(){
+    this.clearContent();
+    const panel=this.add.rectangle(0,0,970,590,0x120c1b,.97).setOrigin(0).setStrokeStyle(3,0x806996);
+    const title=this.add.text(30,22,'ENEMIGOS EXCLUSIVOS',{fontSize:'27px',fontStyle:'bold',color:'#fff'});
+    const note=this.add.text(30,58,'No pueden reclutarse. Sus estadísticas base son inferiores a las clases jugables, pero poseen comportamientos y habilidades propias.',{fontSize:'13px',color:'#cfc3d8',wordWrap:{width:900}});
+    this.content.add([panel,title,note]);
+    EXCLUSIVE_ENEMIES.forEach((e,i)=>{
+      const col=i%3,row=Math.floor(i/3),x=25+col*315,y=105+row*225;
+      const card=this.add.rectangle(x,y,295,205,0x21172d,.96).setOrigin(0).setStrokeStyle(2,e.rarity==='R'?0x8db9ff:0x6d5982);
+      const portrait=this.add.image(x+62,y+67,e.portrait).setDisplaySize(100,100);
+      const name=this.add.text(x+120,y+15,`${e.name} · ${e.rarity}`,{fontSize:'17px',fontStyle:'bold',color:'#fff',wordWrap:{width:160}});
+      const meta=this.add.text(x+120,y+59,`${e.family} · Tamaño ${e.size}
+IA: ${e.aiProfile}`,{fontSize:'11px',color:'#ffe69a',lineSpacing:3});
+      const desc=this.add.text(x+14,y+122,e.codex,{fontSize:'10.5px',color:'#ddd3e4',wordWrap:{width:267},maxLines:3});
+      this.content.add([card,portrait,name,meta,desc]);
+      (e.abilities||[]).slice(0,2).forEach((id,j)=>{const a=ABILITIES[id];if(!a)return;const icon=this.add.image(x+35+j*135,y+184,a.icon).setDisplaySize(30,30);const txt=this.add.text(x+55+j*135,y+175,a.name,{fontSize:'9.5px',fontStyle:'bold',color:'#fff',wordWrap:{width:90},maxLines:2});this.content.add([icon,txt]);});
+    });
+  }
+
   formatStats(label,s){
     return [label,`HP: ${s.maxHp}   MP: ${s.maxMp}`,`DF: ${s.df}   FUE: ${s.str}   INT: ${s.int}`,`AGI: ${s.agi}   CON: ${s.constitution}   ENE: ${s.energy}`,`CAR: ${s.charisma}   VOL: ${s.will}`,`SIG: ${s.stealth}%   PER: ${s.perception}`].join('\n');
   }
