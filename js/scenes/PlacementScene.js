@@ -154,12 +154,15 @@ export class PlacementScene extends Phaser.Scene{
 
     const selectedAbility=ABILITIES[this.selectedAbilityId]||learned[0];
     if(selectedAbility){
-      add(this.add.text(20,525,selectedAbility.description,{fontSize:'10px',color:'#d8ccdf',wordWrap:{width:266},lineSpacing:2,maxLines:4}));
+      add(this.add.text(20,500,selectedAbility.description,{fontSize:'10px',color:'#d8ccdf',wordWrap:{width:266},lineSpacing:2,maxLines:3}));
     }
 
-    const rename=makeButton(this,1014,634,105,38,'RENOMBRAR',()=>this.renameSelected());
-    const deploy=makeButton(this,1128,634,105,38,unit.col!==null?'RETIRAR':'DESPLEGAR',()=>this.toggleSelectedDeployment());
-    const compare=makeButton(this,1242,634,105,38,this.compareId===recruit.id?'QUITAR COMP.':'COMPARAR',()=>this.toggleComparison());
+    const rename=makeButton(this,1010,634,92,34,'RENOMBRAR',()=>this.renameSelected());
+    const deploy=makeButton(this,1111,634,92,34,unit.col!==null?'RETIRAR':'DESPLEGAR',()=>this.toggleSelectedDeployment());
+    const compare=makeButton(this,1212,634,92,34,this.compareId===recruit.id?'QUITAR COMP.':'COMPARAR',()=>this.toggleComparison());
+    rename.text.setFontSize(13);
+    deploy.text.setFontSize(13);
+    compare.text.setFontSize(this.compareId===recruit.id?11:13);
     [rename.bg,rename.text,deploy.bg,deploy.text,compare.bg,compare.text].forEach(o=>{o.setDepth(10);this.detailObjects.push(o);});
   }
 
