@@ -1,9 +1,11 @@
 import { BALANCE } from '../config.js';
 import { CLASS_KEYS, CLASSES } from './classes.js';
 import { randomBlessing } from './blessings.js';
+import { generateExpeditionMap } from '../systems/mapGenerator.js';
 
-export const SAVE_VERSION = 1;
-export const RUN_SAVE_KEY = 'argaBattles.run.v1';
+export const SAVE_VERSION = 2;
+export const RUN_SAVE_KEY = 'argaBattles.run.v2';
+export const LEGACY_RUN_SAVE_KEY = 'argaBattles.run.v1';
 export const META_SAVE_KEY = 'argaBattles.meta.v1';
 
 const freshRunState = () => ({
@@ -54,8 +56,8 @@ export function loadMeta(){
 export function saveMeta(){ localStorage.setItem(META_SAVE_KEY,JSON.stringify(META)); }
 
 export function hasValidRun(){
-  const data=safeParse(localStorage.getItem(RUN_SAVE_KEY));
-  return !!(data&&data.version===SAVE_VERSION&&data.active&&data.seed&&Array.isArray(data.playerRoster));
+  const data=safeParse(localStorage.getItem(RUN_SAVE_KEY))||safeParse(localStorage.getItem(LEGACY_RUN_SAVE_KEY));
+  return !!(data&&data.active&&data.seed&&Array.isArray(data.playerRoster));
 }
 export function saveRun(){
   if(!SAVE.active)return;
@@ -63,12 +65,18 @@ export function saveRun(){
   localStorage.setItem(RUN_SAVE_KEY,JSON.stringify(SAVE));
 }
 export function loadRun(){
-  const data=safeParse(localStorage.getItem(RUN_SAVE_KEY));
+  let data=safeParse(localStorage.getItem(RUN_SAVE_KEY));
+  if(!data){
+    const legacy=safeParse(localStorage.getItem(LEGACY_RUN_SAVE_KEY));
+    if(legacy?.active){data={...legacy,version:SAVE_VERSION,generatedMap:generateMap(legacy.mapNumber||1,legacy.seed)};localStorage.removeItem(LEGACY_RUN_SAVE_KEY);}
+  }
   if(!data||data.version!==SAVE_VERSION||!data.active)return false;
   replaceObject(SAVE,{...freshRunState(),...data});
-  return true;
+  if(!SAVE.generatedMap?.rows||SAVE.generatedMap.rows!==15)SAVE.generatedMap=generateMap(SAVE.mapNumber,SAVE.seed);
+  saveRun();return true;
 }
-export function deleteRunSave(){ localStorage.removeItem(RUN_SAVE_KEY);replaceObject(SAVE,freshRunState()); }
+
+export function deleteRunSave(){ localStorage.removeItem(RUN_SAVE_KEY);localStorage.removeItem(LEGACY_RUN_SAVE_KEY);replaceObject(SAVE,freshRunState()); }
 
 export function randomClass(){ return Phaser.Utils.Array.GetRandom(CLASS_KEYS); }
 export function createRecruit(type = randomClass()){
@@ -78,30 +86,7 @@ export function createRecruit(type = randomClass()){
 }
 export function randomTeam(){ return [createRecruit(),createRecruit(),createRecruit()]; }
 
-function seeded(seed){
-  let s=seed>>>0;
-  return ()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};
-}
-export function generateMap(mapNumber=1,seed=SAVE.seed){
-  const rand=seeded((seed+mapNumber*2654435761)>>>0),nodes=[];
-  let previous=['m'+mapNumber+'-0-1'];
-  nodes.push({id:previous[0],row:0,col:1,type:'combat',links:[]});
-  for(let row=1;row<14;row++){
-    const count=rand()<.32?2:rand()<.08?3:1;
-    const cols=[0,1,2].sort(()=>rand()-.5).slice(0,count).sort();
-    const current=cols.map(col=>`m${mapNumber}-${row}-${col}`);
-    current.forEach((id,i)=>nodes.push({id,row,col:cols[i],type:row%5===0?'reward':'combat',links:[]}));
-    previous.forEach((pid,pi)=>{
-      const p=nodes.find(n=>n.id===pid); const ordered=[...current].sort((a,b)=>Math.abs(nodes.find(n=>n.id===a).col-(p?.col??1))-Math.abs(nodes.find(n=>n.id===b).col-(p?.col??1)));
-      p.links=ordered.slice(0,Math.min(2,ordered.length));
-    });
-    current.forEach(cid=>{if(!previous.some(pid=>nodes.find(n=>n.id===pid)?.links.includes(cid))){const p=nodes.find(n=>n.id===previous[Math.floor(rand()*previous.length)]);p.links.push(cid);}});
-    previous=current;
-  }
-  const bossId=`m${mapNumber}-14-1`;nodes.push({id:bossId,row:14,col:1,type:'boss',links:[]});
-  previous.forEach(pid=>nodes.find(n=>n.id===pid).links=[bossId]);
-  return {mapNumber,seed,nodes,startNodeId:nodes[0].id,bossNodeId:bossId};
-}
+export function generateMap(mapNumber=1,seed=SAVE.seed){ return generateExpeditionMap(mapNumber,seed); }
 
 export function resetRun(){
   replaceObject(SAVE,freshRunState());

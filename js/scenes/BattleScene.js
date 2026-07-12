@@ -11,6 +11,7 @@ import { SUMMONS } from '../data/summons.js';
 import { GameLog } from '../systems/gameLog.js';
 import { executeAbilityEffect } from '../systems/abilityEffects.js';
 import { bestAbilityAction as chooseAbilityAction, bestMove as chooseMove } from '../systems/aiController.js';
+import { calculateDifficulty } from '../systems/difficulty.js';
 
 const STATUS_TEXTURES={
   paralyzed:'paralyzed',bloodThorns:'strengthUp',fireDamage:'fireDamageUp',adaptiveResistance:'adaptiveResistanceStatus',wateryDodge:'wateryDodgeStatus',miniaturized:'miniaturized',maximized:'maximized',transformed:'transformed',stealth:'stealth',poison:'poisoned',bloodThirst:'bloodThirstStatus',crimsonPact:'crimsonPactStatus',lifesteal:'lifesteal'
@@ -32,7 +33,9 @@ export class BattleScene extends Phaser.Scene{
     }
     this.units=[];this.nextId=1;this.log=new GameLog(`battle-round-${SAVE.round}`);globalThis.ARGA_DEBUG={...(globalThis.ARGA_DEBUG||{}),battleLog:this.log};this.log.add('battle_start','Comienza el combate',{round:SAVE.round,players:this.startPositions,enemies:this.enemyPositions,enemyRelics:this.enemyRelics});this.lastAbilityByTeam={player:null,enemy:null};this.damageSerial=0;this.lastTurnDamageSerial=0;this.noDamageTurns=0;this.stalemateResets=0;
     this.startPositions.forEach(p=>this.spawnUnit(p.type,'player',p.col,p.row,p.level||1,p.recruitId,null,p.learnedAbilities,p.blessing,{name:p.name}));
-    const scale=earlyEnemyScaling(SAVE.round);
+    const node=SAVE.generatedMap?.nodes?.find(n=>n.id===SAVE.pendingNodeId);
+    const difficulty=calculateDifficulty(SAVE,node),baseScale=earlyEnemyScaling(SAVE.round),extra=Math.max(0,difficulty.score-1);
+    const scale={hp:baseScale.hp*(1+extra*.10),combat:baseScale.combat*(1+extra*.065)};
     this.enemyPositions.forEach(p=>this.spawnUnit(p.type,'enemy',p.col,p.row,Math.min(10,p.level||1),null,scale,p.learnedAbilities,p.blessing,{aiProfile:p.aiProfile}));
     this.applyBlessings();this.units.forEach(u=>this.drawUnit(u));
     this.action='none';this.active=null;this.selectedSkillIndex=0;this.turnQueue=[];this.queueIndex=0;this.battleOver=false;this.autoBattle=false;this.actionLocked=false;
